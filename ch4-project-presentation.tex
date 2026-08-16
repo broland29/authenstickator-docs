@@ -1,0 +1,249 @@
+\chapter{Project Presentation}
+
+\section{Architecture}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/diagram-initial.png}
+    \caption{Architecture.}
+    \label{fig:architecture}
+\end{figure}
+
+\section{TOTP}
+
+The \t{pyotp} library is used.
+
+\section{USB Encryption}
+
+The main layer of security is the full encryption of the USB sticks. If someone steals the USB, he/she cannot gain access to the contents of the USB without knowing the encryption password. Even if copied, the content is still encrypted.
+
+
+\section{Storage}
+
+The Storage module of \app{} is responsible for persistence. The storage is a file called \t{storage.txt}. It is in JSON format.
+
+\subsection{Encryptor}
+
+Since the host USB is encrypted, \t{storage.txt} is encrypted as well. However, to avoid a plaintext JSON file containing the secrets, the user can opt for additional encryption of the Storage. This applies only for the storage file, and is useful if we want to export the secrets.
+
+The user can choose through the config file between two encryptor types: \t{NoEncryptor} and \t{AESEncryptor}.
+
+
+\subsubsection{NoEncryptor}
+
+\t{NoEncryptor} does what its name suggests: it does not encrypt/ decrypt, it just encodes/decodes. Storage encryption is an additional security layer which can be turned off by choosing this option. This is recommended for development mostly.
+
+
+\subsubsection{AESEncryptor}
+\t{AESEncryptor} encrypts and decrypts using the AES algorithm.
+
+The AES algorithm is a symmetric one, meaning it uses the same key for encryption and decryption. It does not accept any key, it has to be 16, 24 oe 32 bytes long. Requiring the user to choose a key with a fixed length is tedious, so Password-Based Key Derivation Function 2 (PBKDF2) is used. This mixes its input with a salt, and outputs a fixed length string, making it perfect for our use case. Also, it performs hashing, making it harder to brute force - but this is irrelevant for us.
+
+\b{TODO: go in details how AES works and how it is used.}
+
+
+
+
+\subsection{TPM}
+
+The usage of TPM is an optional setting. If enabled, \app{} will use the TPM of the machine to decrypt and encryt the key used for the encryption of the storage (containing the secrets). This results in an extra layer of security (on top of regular encryption of the storage), but also ties \app{} to a single PC: the app will be usable only on one hardware, due to the nature of TPM.
+
+\subsubsection{TPM on Linux}
+
+For Linux, the \t{tpm2\_pytss} library is used.
+
+As explained in \cite{pi3g_tpm_2025}, on Linux, TPM shows up as device nodes. \t{/dev/tmp0} is the Hardware Interface, while \t{/dev/tpmtm0} is the Kernel Resource Manager. Most applications use the Kernel Resource Manager, since through that entry the kernel handle context management and other low-level mechanisms.
+
+TSS stands for Trusted Software Stack, and it is the software around the TPM chip. It has a layered architecture, providing programmer-friendly API calls. The four layers are:
+
+\begin{enumerate}
+    \item \textbf{FAPI}: Feature API. High-level, developer-friendly. No need to handle sessions and authorization.
+    
+    \item \textbf{ESAPI}: Enhanced System API. Wraps sessions and handles retries when TPM is busy.
+    
+    \item \textbf{SAPI}: System API. Low-level C interface implementing the tmp2.0 specifications.
+    
+    \item \textbf{TCTI}: TPM Command Transmission Interface. The Transport Layer, working with bytes.
+\end{enumerate}
+
+These layers are specifications, and there are different implementations of it. 
+
+\app{} uses FAPI. This choice was made since the goal is to have a lightweight and generic app; going lower in the TSS layers would mean more OS/computer specific code, and more chances to make errors.
+
+When this layer is used, configurations are held in a file named \t{fapi-config.json}. The default location is \t{/etc/tpm2-tss/fapi-config.json}, but it can be overwritten by setting the \t{TSS2\_FAPICONF} environment variable. \app{} generates one such file specifically for the usage of this app, so that it does not mess with system-wide TPM settings. Example:
+\begin{lstlisting}[language=java]
+{
+    "profile_name": "P_RSA2048SHA256",
+    "profile_dir": "/home/broland/authenstickator/src/tpm/fapi-config/profile-dir",
+    "user_dir": "/home/broland/authenstickator/src/tpm/fapi-config/user-dir",
+    "system_dir": "/home/broland/authenstickator/src/tpm/fapi-config/system-dir",
+    "system_pcrs": [],
+    "log_dir": "/home/broland/authenstickator/src/tpm/fapi-config",
+    "ek_cert_less": "yes",
+    "tcti": "swtpm:port=2321"
+}
+\end{lstlisting}
+The FAPI profile is downloaded from the internet, from the URL specified in the config file. The profile's version shall match the version of the installed native \t{tpm2-tss/libtss2-fapi}. This can be retrieved with the help of the command \t{apt policy libtss2-fapi1}. Note that this is different from the \t{tpm2-pytss} version shown in \t{requirements.txt}.
+
+
+The current user has to be added to the tss group.
+\begin{lstlisting}[language=bash]
+sudo usermod -aG tss "$USER"
+\end{lstlisting}
+
+
+Development was done with a simulated TPM. Initially I worked with the real TPM, and I got locked out when I was messing with it. A virtualized TPM makes experimenting easier and leaves the real TPM untouched.
+
+The TPM emulator \t{swtpm} can be downloaded with APT:
+\begin{lstlisting}[language=bash]
+sudo apt update && sudo apt install swtpm
+\end{lstlisting}
+
+It can be started by creating a temporary directory (will be deleted at system shutdown) and using it to run the virtual TPM. After this, the third command sets the variable \t{TSS2\_TCTI}, so that in the current terminal session the virtualized TPM replaces the real one.
+
+\begin{lstlisting}[language=bash]
+mkdir -p /tmp/vtpm
+
+swtpm socket --tpm2 --tpmstate dir=/tmp/vtpm --ctrl type=tcp,port=2322 --server type=tcp,port=2321 --flags not-need-init &
+
+export TSS2_TCTI="swtpm:port=2321"
+\end{lstlisting}
+
+To check manually if swtpm is running, you can netcat it.
+\begin{lstlisting}[language=bash]
+nc -zv localhost 2322
+\end{lstlisting}
+
+If anything goes wrong, the virtual TPM can be stopped easily by killing its process, and the folder can be deleted.
+\begin{lstlisting}[language=bash]
+pkill swtpm | rm -r /tmp/vtpm
+\end{lstlisting}
+
+
+
+
+
+
+FAPI needs a one-time initialization, called provisioning. This can be done with the \t{provision} method. To avoid error \t{0x0006001f} (\t{TSS2\_FAPI\_RC\_PATH\_ALREADY\_EXISTS}), this method is called with parameter \t{is\_provisioned\_ok} set to true. This way the application does not fail on subsequent startups, or if the user provisioned the TPM beforehand manually or through another application.
+
+
+
+\section{Logging}
+
+The app defines a custom logger. The \t{logging} library is used. Logs go in the console and in a logfile depending on settings. Special care is taken not to log secrets.
+
+\section{Config}
+
+The configuration (settings) of the app is made from a file \t{config.json}. It is in JSON format.
+
+
+
+
+
+\section{Development}
+
+Development was done using PyCharm IDE. The setup is a standard one. Git is used for version control, and the repo can be found on GitHub. Virtual environments are used (\t{venv}). The generated folder in \t{.gitignore}, i.e. not part of the source control, since each developer will create his/her own environment, and installed libraries are not meant to be under source control.
+
+The standard development starts with cloning the project.
+
+First, you need Python. Ubuntu came with Python preinstalled, command \t{python3 --version} gave output \t{Python 3.10.12}.
+
+
+\begin{lstlisting}[language=bash]
+\end{lstlisting}
+
+
+To use \t{tpm2\_pytss} and its \t{FAPI} component, you need to install a build compiler; the TPM2 development headers and build tools; some FAPI requirements; and some PyGObject requirements, which are dependencies for pywebview. For the software TPM, swtpm is needed.
+\begin{lstlisting}[language=bash]
+sudo apt install git \
+    python3.10-venv \
+    build-essential \
+    libtss2-dev pkg-config python3-dev \
+    libssl-dev libjson-c-dev libcurl4-openssl-dev \
+    libgirepository1.0-dev libcairo2-dev libglib2.0-dev gobject-introspection \
+    swtpm
+\end{lstlisting}
+Careful with trailing whitespaces afet \, that might break your command.
+
+
+\begin{lstlisting}[language=bash]
+git clone https://github.com/broland29/authenstickator.git
+
+cd authenstickator
+
+python3 -m venv venv
+
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+python3 -m src.main
+\end{lstlisting}
+
+To ensure that the app is properly working, you can run the tests:
+\begin{lstlisting}[language=bash]
+python -m pytest
+\end{lstlisting}
+
+
+The app is run as a module (hence the \t{-m} flag) and started from the root folder. This means that imports have to start from the \t{src} folder, for example, \t{from src.config.config\_manager import ConfigManager} instead of \t{from config.config\_manager import ConfigManager}. While the latter might work in PyCharm due to it modifying the \t{PYTHONPATH} in the back.
+
+
+If you end up adding new dependencies, run:
+\begin{lstlisting}[language=bash]
+pip freeze > requirements.txt
+\end{lstlisting}
+
+
+Common errors:
+\t{tpm2\_pytss.TSS2\_Exception.TSS2\_Exception: tcti:IO failure}: you are probably running with virtualized TPM enabled, but the virtualized TPM is not running.
+
+
+
+The command to create a USB export:
+
+We have to specify paths to point to ., so that imports work correctly.
+We put the dist/build/spec paths to the temporary folder, to not clutter the project folder (messes with git and such). Spec path is not set, so the .spec file is generated in the default location, where it is executed (in the project root). This is intentional, since add-data will take paths relative from the .spec file.
+JSON and HTML files are not added by default and need to be added with add-data. See pyinstaller --help for more details. 
+\begin{lstlisting}[language=bash]
+pyinstaller src/main.py \
+    --clean \
+    --add-data "src/config/config.json:src/config" \
+    --add-data "src/ui/view:ui/view" \
+    --add-data "src/ui/script:ui/script" \
+    --paths . \
+    --distpath /tmp/authenstickator/dist \
+    --workpath /tmp/authenstickator/build 
+\end{lstlisting}
+
+
+
+There is always a key, no matter if encryption or tpm is disabled.
+
+
+
+Max line length is 100 characters.
+
+
+
+
+Making real TPM work:
+1. Make sure you have a TPM2 chip:
+
+sudo dmesg | grep -i tpm
+
+
+2. Add your user to the tss group.
+
+sudo usermod -aG tss "\$USER"
+
+3. Restart.
+
+4. Run the app (provisions in the back)
+
+
+Testiing with VM:
+- start from fresh install
+- add to group
+- add TPM
+- add stick

@@ -1,0 +1,54 @@
+\chapter{Bibliographic Research}
+
+\section{Existing Solutions}
+
+\label{lab:virtual-fido}
+\href{https://github.com/bulwarkid/virtual-fido}{Virtual FIDO}: runs on the host machine, no second device, kills the purpose of 2FA.
+
+\href{https://sourceforge.net/projects/usbraptor/}{USB Raptor}: turns USB into a security key; if removed, blocks the PC. Different purpose, similar goal.
+
+\href{https://www.yubico.com/products/}{YubiKey}: professional, hardware-backed, but expensive.
+
+\section{Two Factor Authentication}
+
+
+
+There are several types of authentication factors that can be used to confirm a person's identity.\cite{fortinet2FA} The most common include:
+\begin{enumerate}
+    \item \textbf{A knowledge factor:} This is information that the user knows, which could include a password, personal identification number (PIN), or passcode.
+    
+    \item \textbf{A possession factor:} This is something that the user has or owns, which could be their driver’s license, identification card, mobile device, or an authenticator app on their smartphone.
+    
+    \item \textbf{A location factor:} This is usually guided by the location in which a user attempts to authenticate their identity. Organizations can limit authentication attempts to certain devices in specific locations, depending on how and where employees log in to their systems. 
+    
+    \item \textbf{A time factor:} This factor restricts authentication requests to specific times when users are allowed to log in to a service. All access attempts outside of this time will be blocked or restricted. 
+\end{enumerate}
+
+TOTP based 2FA builds on possession factor - ``something you have''. \app{} replaces the mobile phone as possession with a USB stick, this way it does not break the idea of 2FA, unlike \hyperref[lab:virtual-fido]{Virtual FIDO}.
+
+\section{Encryption}
+
+The app uses diffent encryption algorithms.
+
+\subsection{LUKS}
+
+For encrypting the USB stick for Linux.
+
+\subsection{BitLocker}
+
+For encrypting the USB stick for Windows.
+
+\subsection{AES}
+
+For encrypting the storage file of secrets.
+
+\section{TOTP}
+
+The system generates tokens based on the Time-Based
+One-Time Password (TOTP) algorithm \cite{rfc6238}.
+
+
+\section{TPM}
+
+``A Trusted Platform Module, also known as a TPM, is a cryptographic coprocessor that is present on most commercial PCs and servers'' \cite{Arthur2015}.
+

@@ -1,0 +1,15 @@
+
+\chapter{Theoretical and Experimental Results}
+
+\section{Testing on Linux}
+
+Since the most popular distro is Ubuntu\footnote{2025 Stack Overflow Developer Survey: \url{https://survey.stackoverflow.co/2025/technology}}, I chose to test and build on a Ubuntu 22.04 LTS machine. Ubuntu 20.04 LTS hit its Standard Security
+Maintenance deadline at May 2025, while 22.04 LTS is still in free support until May 2027. Distros shall be backward compatible, so the results shall be the same for newer Ubuntu releases as well, and the setup will probably work on Debian and other Debian-based distros as well.
+
+
+\section{Unit tests}
+
+For unit tests, the \t{pytest} library was used. To run all tests, with the virtual environment activated, run the following command:
+\begin{lstlisting}[language=bash]
+python -m pytest
+\end{lstlisting}

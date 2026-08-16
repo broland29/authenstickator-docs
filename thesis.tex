@@ -1,0 +1,245 @@
+\documentclass[12pt,a4paper, oneside]{report}
+
+\usepackage{style/cs}
+\usepackage[a4paper, margin=1in]{geometry}
+
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage{amsmath,amsbsy}
+\usepackage{amssymb}
+\usepackage[matrix,arrow]{xy}
+\usepackage{ae,aecompl}
+\usepackage{amstext}
+\usepackage{graphics}
+\usepackage{ae,aecompl}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\usepackage{tabularx}
+
+\usepackage{hyperref}
+
+\usepackage[english]{babel}
+\usepackage{pgfpages}
+
+\usepackage{ucs}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{ifpdf}
+
+\graphicspath{{figures/}}
+\ifpdf
+  \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  \DeclareGraphicsExtensions{.eps}
+\fi
+
+\centerchapter
+\singlespace
+
+\renewcommand{\thesisauthor}{Roland BÁLINT}
+\renewcommand{\thesismonth}{September}
+\renewcommand{\thesisyear}{2026}
+\renewcommand{\thesistitle}{AuthenStickator: a secure and portable TOTP-based authenticator app running on a USB stick}
+\renewcommand{\thesissupervisor}{Conf. dr. ing. Ciprian Pavel OPRIȘA}
+\newcommand{\utcnlogo}{\includegraphics[width=14.5cm]{img/tucn.jpg}}
+\newcommand{\department}{\textbf{FACULTY OF AUTOMATION AND COMPUTER SCIENCE}\\
+\textbf{COMPUTER SCIENCE DEPARTMENT}\\}
+
+\newcommand{\app}{AuthenStickator}
+\renewcommand{\t}[1]{\texttt{#1}}
+\renewcommand{\i}[1]{\textit{#1}}
+\renewcommand{\b}[1]{\textbf{#1}}
+
+\lstset{
+    basicstyle=\ttfamily\small,       % Monospace font
+    backgroundcolor=\color{gray!10},  % Light grey background
+    frame=single,                     % Draws a box around the code
+    rulecolor=\color{black!30},       % Light grey border
+    breaklines=true,                  % Wraps long lines of code
+    showstringspaces=false
+}
+
+\begin{document}
+
+\begin{titlepage}
+\vspace*{-2cm}
+\utcnlogo
+\begin{center}
+\department
+
+\vspace{5cm}
+
+\Large {\textbf\thesistitle \\}
+\vspace {1cm}
+\large {MASTER'S THESIS}\\
+
+\vspace{8cm}
+
+\begin{tabularx}{\textwidth}{r l}  
+Master graduate:   &  \textbf\thesisauthor \\
+ & \\
+Supervisor:  & \textbf\thesissupervisor \\
+\end{tabularx}
+
+\vspace{2.5cm}
+
+\thesismonth, \thesisyear
+\end{center}
+\end{titlepage}
+
+
+
+
+\begin{titlepage}
+\vspace*{-2cm}
+\utcnlogo
+\begin{center}
+\department
+
+\vspace{1cm}
+
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}%
+\begin{tabularx}{\textwidth}{lR}
+DEAN, & HEAD OF DEPARTMENT, \\
+\textbf{Prof.Dr.Eng. Vlad MUREȘAN} & \textbf{Prof.Dr.Eng. Rodica POTOLEA}\\
+\end{tabularx}
+
+\vspace {3.5cm}
+
+Master graduate:  \textbf\thesisauthor
+\vspace{1cm}
+
+\large \textbf\thesistitle \\
+\vspace {1cm}
+
+\end{center}
+
+
+\begin{flushleft}
+\begin{enumerate}
+ \item \textbf{Project proposal:} \textit{Brief description of the master's thesis and the initial data}
+
+ \item \textbf{Project contents:} \textit{(enumeration of the main parts) Example: Presentation page, Title of chapter 1, Title of chapter 2, \dots, Title of chapter n, Bibliography, Appendices.}
+
+ \item \textbf{Place of documentation:} \textit{Example:} Technical University of Cluj-Napoca, Computer Science Department
+
+ \item \textbf{Consultants:} 
+
+ \item \textbf{Date of issuing the proposal:} \textit{Example:} November, 2025
+
+ \item \textbf{Date of delivery:} \textit{Example:} July 5th, 2026
+\end{enumerate}
+
+\end{flushleft}
+
+\vspace{3cm}
+
+\begin{center}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}%
+\begin{tabularx}{\textwidth}{X X}  %{lR}
+ & Master's graduate: (\textit{\tiny here comes the signature})\dotfill \\
+ & \\
+ & Supervisor: \dotfill \\
+\end{tabularx}
+
+
+
+\end{center}
+
+\end{titlepage}
+
+
+\begin{titlepage}
+
+\end{titlepage}
+
+
+\begin{titlepage}
+\vspace*{-2cm}
+\utcnlogo
+\begin{center}
+\department
+\end{center}
+
+\vspace{2cm}
+
+\begin{center}
+\textbf{Declarație pe proprie răspundere privind \\
+autenticitatea lucrării de disertație}
+\end{center}
+
+\vspace{1cm}
+
+Subsemnatul(a) \thesisauthor, legitimat(ă) cu  \dots \dots \,  seria  \dots \dots \,  nr.  \, \dots \dots \dots \dots, 
+CNP \dots \dots \dots \dots \dots \dots \dots \dots, autorul lucrării \thesistitle, elaborată  în vederea susținerii
+examenului de finalizare a studiilor de disertație la Facultatea de Automatică și Calculatoare, Programul de studiu 
+\dots \dots \dots \dots \dots \dots \dots \dots \dots \dots, din cadrul Universității 
+Tehnice din Cluj-Napoca, sesiunea \dots \dots (iulie/septembrie) \dots \dots a anului universitar 2024-2025, declar pe
+proprie răspundere că această lucrare este rezultatul propriei activități intelectuale, pe baza cercetărilor mele
+și pe baza informațiilor obținute din surse care au fost citate în textul lucrării și în bibliografie.
+
+Declar că această lucrare nu conține porțiuni plagiate, iar sursele bibliografice au fost folosite cu respectarea
+legislației române și a convențiilor internaționale privind drepturile de autor.
+
+Declar, de asemenea, că această lucrare nu a mai fost prezentată în fața unei alte comisii de examen de disertație.
+
+În cazul constatării ulterioare a unor declarații false, voi suporta sancțiunile administrative, respectiv,
+\textit{anularea examenului de disertație}.
+
+Sunt de acord ca, pe tot parcursul vieții, în cazul în care este necesar și se va dori verificarea
+autenticității lucrării mele să fiu identificat și verificat în baza datelor declarate de mine.
+\vspace{3cm}
+
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}%
+\hspace{-1cm}\begin{tabularx}{\textwidth}{l R l}  %{lR}
+Data & \thesisauthor & \\
+& \\
+\dots \dots \dots \dots  &  \dots \dots \dots \dots \dots \dots \dots \dots &  \\
+& \textit{Signature} &
+\end{tabularx}
+
+
+\end{titlepage}
+
+
+\begin{titlepage}
+\phantom{1}
+\end{titlepage}
+
+
+
+\newenvironment{definition}[1][Definition.]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\tableofcontents
+\newpage
+
+\clearpage
+\newpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{ch1-introduction}
+\include{ch2-objectives-of-the-research}
+\include{ch3-bibliographic-research}
+\include{ch4-project-presentation}
+\include{ch5-theoretical-and-experimental-results}
+\include{ch6-conclusions}
+
+\bibliographystyle{IEEEtran}
+\bibliography{thesis}  % same file name as for .bib
+
+\include{apendix}
+
+\end{document}
