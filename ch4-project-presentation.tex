@@ -1,6 +1,7 @@
-\chapter{Project Presentation}
+\chapter{Project Presentation} \label{lab:project-presentation}
 
-\section{The Proposed Framework}
+
+\section{The Proposed Framework} \label{lab:the-proposed-framework}
 
 The goal of this Masters' thesis is to provide a generic framework for a TOTP application on a USB stick, as well as an implementation for it.
 In this section, we will focus on the framework, i.e., the ideas and principles, rather than the technology used.
@@ -106,62 +107,143 @@ The framework marks TPM usage optional: if disabled, simply the user password is
 
 
 
-\section{Architecture}
+\section{The Implementation} \label{lab:ch4-the-implementation}
+
+The implementation of the proposed framework presented in Section \ref{lab:the-proposed-framework} is the application called \app{}.
+It consists of a Python front-end and a simple web front-end (HTML, CSS, JavaScript).
+The architecture of \app{} can be seen on Figure \ref{fig:high-level}.
+The front-end and the back-end is decoupled, resulting in a modular architecture.
+In the following, detailed description of both will come.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{img/diagram-initial.png}
-    \caption{Architecture.}
-    \label{fig:architecture}
+    \includegraphics[width=\textwidth]{img/diagram-high-level.png}
+    \caption{High-level diagram of the architecture.}
+    \label{fig:high-level}
 \end{figure}
 
-\section{TOTP}
-
-The \t{pyotp} library is used.
-
-\section{USB Encryption}
-
-The main layer of security is the full encryption of the USB sticks. If someone steals the USB, he/she cannot gain access to the contents of the USB without knowing the encryption password. Even if copied, the content is still encrypted.
 
 
-\section{Storage}
+\subsection{The Back-end}
 
-The Storage module of \app{} is responsible for persistence. The storage is a file called \t{storage.txt}. It is in JSON format.
+As mentioned earlier, the back-end of the application is written in Python.
+While it might sound like a weird choice for a security-first application, there are reasons for this decision.
+First and foremost, Python provides a lot of libraries, making implementation easier.
+Using standard implementations and not reinventing the wheel is usually the better approach for small teams; and especially in the case of cryptographic algorithms, like encryption and hashing.
 
-\subsection{Encryptor}
+Second of all, Python provides an easy way to manage dependencies.
+With the help of the \t{pip} package manager, any library can be easily downloaded.
+All the libraries were downloaded inside a virtual environment (\t{venv}), so they are isolated and do not mess with the system's packages.
+The downloaded packages were then listed inside a \t{requirements.txt} file, so one can install all of them with a single command.
 
-Since the host USB is encrypted, \t{storage.txt} is encrypted as well. However, to avoid a plaintext JSON file containing the secrets, the user can opt for additional encryption of the Storage. This applies only for the storage file, and is useful if we want to export the secrets.
+While Python isn't famous about its OOP capabilities, I chose an object-oriented approach.
+For me and for most developers, it is simply a thing of habit to think of complex problems in terms of classes, objects, and interactions between objects.
+It provides structure, and a common language among developers.
+In \app{}, every Python file contains exactly one class, kind of like how Java enforces it.
 
-The user can choose through the config file between two encryptor types: \t{NoEncryptor} and \t{AESEncryptor}.
+Python is also duck-typed, meaning that for Python, ``if something quacks, it is a duck''.
+It does not enforce types, there is no compilation.
+However, types can be linted, and I naturally chose to do so.
+More specifically, in each method's signature, I also specified what data type I expect for each parameter, and what the method should return.
+This is not enforced by Python, but a good IDE (like PyCharm) can catch a lot of bugs this way.
+Also, it is clearer to understand the intentions of methods.
 
-
-\subsubsection{NoEncryptor}
-
-\t{NoEncryptor} does what its name suggests: it does not encrypt/ decrypt, it just encodes/decodes.
-Storage encryption is an additional security layer which can be turned off by choosing this option. This is recommended for development mostly.
-
-
-\subsubsection{AESEncryptor}
-\t{AESEncryptor} encrypts and decrypts using the AES algorithm.
-
-The AES algorithm is a symmetric one, meaning it uses the same key for encryption and decryption. It does not accept any key, it has to be 16, 24 oe 32 bytes long. Requiring the user to choose a key with a fixed length is tedious, so Password-Based Key Derivation Function 2 (PBKDF2) is used. This mixes its input with a salt, and outputs a fixed length string, making it perfect for our use case. Also, it performs hashing, making it harder to brute force - but this is irrelevant for us.
-
-\b{TODO: go in details how AES works and how it is used.}
-
+The backend consists of several packages, which will be presented in the next sections.
+Each package is independent of the other.
+They can be (and are) unit tested; see: Section \ref{ch5-theoretical-and-experimental-results}.
+They will be presented in the following.
 
 
+\subsubsection{Config}
 
-\subsection{TPM}
+The Config package contains the \t{ConfigManager}, as well as one or two JSON files.
+The \t{ConfigManager} is a singleton class, and its instance provides the \t{get} method.
+The role of this class and its method is to read the JSON configuration file and provide configuration values for other back-end classes.
+This way, the developer (or a more tech-savvy user) can easily change the parameters (configs) of \app{}.
 
-The usage of TPM is an optional setting. If enabled, \app{} will use the TPM of the machine to decrypt and encryt the key used for the encryption of the storage (containing the secrets). This results in an extra layer of security (on top of regular encryption of the storage), but also ties \app{} to a single PC: the app will be usable only on one hardware, due to the nature of TPM.
+The name of the config file is hardcoded, and it is \t{config.json}.
+It provides a multi-layer config file, where configs are grouped by the package/ feature they are used by.
+The developers also have the possibility to define a \t{config-local.json} file, which if present, has priority over \t{config.json}.
+This is also part of \t{.gitignore}, i.e., not in version control.
+So it is solely for local development, avoiding pushing to git test configurations.
 
-\subsubsection{TPM on Linux}
+An example \t{config.json} looks like this:
+\begin{lstlisting}[language=JSON]
+{
+  "logger": {
+    "log_level": "DEBUG",
+    "log_file_path": "log.txt"
+  },
+  "pywebview": {
+    "debug": false
+  },
+  "tpm": {
+    "enabled": true,
+    "fapi_profile_name": "P_RSA2048SHA256",
+    "fapi_profile_file": "P_RSA2048SHA256.json",
+    "fapi_profile_url": "https://raw.githubusercontent.com/tpm2-software/tpm2-tss/3.2.0/dist/fapi-profiles/P_RSA2048SHA256.json",
+    "virtualized": false,
+    "virtualized_tpm_path": "/tmp/vtpm",
+    "virtualized_tpm_port": 2321,
+    "virtualized_tpm_ctrl_port": 2322,
+    "virtualized_tpm_startup_seconds": 1
+  },
+  "storage": {
+    "storage_file_path": "storage.txt",
+    "hashed_user_password_file_path": "hashed-user-password.txt"
+  },
+  "encryptor": {
+    "type": "AES"
+  },
+  "hasher": {
+    "type": "ARGON2"
+  }
+}
+\end{lstlisting}
 
-For Linux, the \t{tpm2\_pytss} library is used.
+The meaning of each configuration parameter will be explained in the corresponding package's section.
 
-As explained in \cite{pi3g_tpm_2025}, on Linux, TPM shows up as device nodes. \t{/dev/tmp0} is the Hardware Interface, while \t{/dev/tpmtm0} is the Kernel Resource Manager. Most applications use the Kernel Resource Manager, since through that entry the kernel handle context management and other low-level mechanisms.
 
-TSS stands for Trusted Software Stack, and it is the software around the TPM chip. It has a layered architecture, providing programmer-friendly API calls. The four layers are:
+\subsubsection{Logger}
+
+The logger package contains \t{LoggerManager}, yet another singleton class.
+As its name suggests, the logger manager provides a logger instance for logging.
+The standard \t{logging} library is used.
+For simplicity, \app{} uses only four log levels:
+\begin{itemize}
+    \item \b{Error}: for fatal issues, ones which break execution.
+    \item \b{Warning}: for issues which should not be ignored, but do not crash the app.
+    \item \b{Info}: for messages which are not issues, but things that might help in audit.
+    \item \b{Debug}: the most low-level messages; these are useful only for development.
+\end{itemize}
+
+The format of log lines is: date and time, severity level in a letter (E, W, I, D), the file and the line of the source, the logger, and the message itself. For example:
+
+\begin{lstlisting}
+[2026-08-16 22:14:47] [E] [util.py:208] [pywebview] Error while processing window.native.bin: unable to get the value
+\end{lstlisting}
+
+While there is only one logger instance, \t{pywebview}, the front-end library also logs its warnings and errors.
+These are useful, so instead of throwing them out, they are ``propagated'' to our logger.
+This is why the logger is also printed in the log line: it can be either \t{[root]} or \t{[pywebview]}.
+
+\subsubsection{TOTP}
+
+\i{TODO}
+
+\subsubsection{TPM}
+
+\i{TODO}
+
+
+As explained in \cite{pi3g_tpm_2025}, on Linux, TPM shows up as device nodes.
+\t{/dev/tmp0} is the Hardware Interface, while \t{/dev/tpmtm0} is the Kernel Resource Manager.
+Most applications use the Kernel Resource Manager, since through that entry the kernel handles context management and other low-level mechanisms.
+
+TSS stands for Trusted Software Stack, and it is the software around the TPM chip.
+It has a layered architecture, providing programmer-friendly API calls.
+Its layers are specifications, and there are different implementations of it.
+The four layers are:
 
 \begin{enumerate}
     \item \textbf{FAPI}: Feature API. High-level, developer-friendly. No need to handle sessions and authorization.
@@ -173,24 +255,62 @@ TSS stands for Trusted Software Stack, and it is the software around the TPM chi
     \item \textbf{TCTI}: TPM Command Transmission Interface. The Transport Layer, working with bytes.
 \end{enumerate}
 
-These layers are specifications, and there are different implementations of it.
+\app{} uses the \t{tpm2\_pytss} library and the FAPI layer.
+FAPI was chosen since it is the most high-level, so the resulting code will be more generic.
+Going lower in the TSS layers would mean more OS/ hardware specific code, and more chances to make errors.
 
-\app{} uses FAPI. This choice was made since the goal is to have a lightweight and generic app; going lower in the TSS layers would mean more OS/computer specific code, and more chances to make errors.
-
-When this layer is used, configurations are held in a file named \t{fapi-config.json}. The default location is \t{/etc/tpm2-tss/fapi-config.json}, but it can be overwritten by setting the \t{TSS2\_FAPICONF} environment variable. \app{} generates one such file specifically for the usage of this app, so that it does not mess with system-wide TPM settings. Example:
-\begin{lstlisting}[language=java]
+When this layer is used, configurations are held in a file named \t{fapi-config.json}.
+The default location is \t{/etc/tpm2-tss/fapi-config.json}, but it can be overwritten by setting the \t{TSS2\_FAPICONF} environment variable.
+\app{} generates one such file specifically for the usage of this app, so that it does not mess with system-wide TPM settings.
+It might look something like this:
+\begin{lstlisting}[language=json]
 {
     "profile_name": "P_RSA2048SHA256",
-    "profile_dir": "/home/broland/authenstickator/src/tpm/fapi-config/profile-dir",
-    "user_dir": "/home/broland/authenstickator/src/tpm/fapi-config/user-dir",
-    "system_dir": "/home/broland/authenstickator/src/tpm/fapi-config/system-dir",
+    "profile_dir": "/home/broland/.local/share/authenstickator/profile-dir",
+    "user_dir": "/home/broland/.local/share/authenstickator/user-dir",
+    "system_dir": "/home/broland/.local/share/authenstickator/system-dir",
     "system_pcrs": [],
-    "log_dir": "/home/broland/authenstickator/src/tpm/fapi-config",
+    "log_dir": "/home/broland/.local/share/authenstickator",
     "ek_cert_less": "yes",
     "tcti": "swtpm:port=2321"
 }
 \end{lstlisting}
-The FAPI profile is downloaded from the internet, from the URL specified in the config file. The profile's version shall match the version of the installed native \t{tpm2-tss/libtss2-fapi}. This can be retrieved with the help of the command \t{apt policy libtss2-fapi1}. Note that this is different from the \t{tpm2-pytss} version shown in \t{requirements.txt}.
+
+The FAPI profile is downloaded from the internet, from the URL specified in the config file.
+The profile's version shall match the version of the installed native \t{tpm2-tss/libtss2-fapi}.
+This can be retrieved with the help of the command \t{apt policy libtss2-fapi1}.
+Note that this is different from the \t{tpm2-pytss} version shown in \t{requirements.txt}.
+
+
+
+\subsubsection{Storage}
+
+\i{TODO}
+
+\subsubsection{Encryptor}
+
+The AES algorithm is a symmetric one, meaning it uses the same key for encryption and decryption.
+It does not accept any key, it has to be 16, 24 or 32 bytes long.
+Requiring the user to choose a key with a fixed length is tedious, so Password-Based Key Derivation Function 2 (PBKDF2) is used.
+This mixes its input with a salt, and outputs a fixed length string, making it perfect for our use case.
+
+
+\i{TODO}
+
+\subsubsection{Hasher}
+
+\i{TODO}
+
+
+
+
+\section{Development}
+
+Development was done on a Linux machine (POP OS) and a test run for the following commands was performed on an Ubuntu 22 virtual machine.
+
+
+
+
 
 
 The current user has to be added to the tss group.
@@ -235,19 +355,10 @@ FAPI needs a one-time initialization, called provisioning. This can be done with
 
 
 
-\section{Logging}
-
-The app defines a custom logger. The \t{logging} library is used. Logs go in the console and in a logfile depending on settings. Special care is taken not to log secrets.
-
-\section{Config}
-
-The configuration (settings) of the app is made from a file \t{config.json}. It is in JSON format.
 
 
 
 
-
-\section{Development}
 
 Development was done using PyCharm IDE. The setup is a standard one. Git is used for version control, and the repo can be found on GitHub. Virtual environments are used (\t{venv}). The generated folder in \t{.gitignore}, i.e. not part of the source control, since each developer will create his/her own environment, and installed libraries are not meant to be under source control.
 

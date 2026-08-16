@@ -32,6 +32,40 @@
 
 \usepackage{ifpdf}
 
+% yoinked from: https://tex.stackexchange.com/a/732867/301747
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily,
+    numbers=left,
+    numberstyle=\scriptsize,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{gray!10},
+    showstringspaces=false,
+    string=[db]{"},
+    stringstyle=\color{green!50!black},
+    morestring=[s][\color{black}]{\ \ "}{":},
+    keywordstyle=\color{blue},
+    keywords={true,false,null},
+    literate=
+     *{0}{{{\color{red}0}}}{1}
+      {1}{{{\color{red}1}}}{1}
+      {2}{{{\color{red}2}}}{1}
+      {3}{{{\color{red}3}}}{1}
+      {4}{{{\color{red}4}}}{1}
+      {5}{{{\color{red}5}}}{1}
+      {6}{{{\color{red}6}}}{1}
+      {7}{{{\color{red}7}}}{1}
+      {8}{{{\color{red}8}}}{1}
+      {9}{{{\color{red}9}}}{1}
+      {.}{{{\color{red}.}}}{1}
+      {:}{{{\color{gray}{:}}}}{1}
+      {,}{{{\color{gray}{,}}}}{1}
+      {\{}{{{\color{gray}{\{}}}}{1}
+      {\}}{{{\color{gray}{\}}}}}{1}
+      {[}{{{\color{gray}{[}}}}{1}
+      {]}{{{\color{gray}{]}}}}{1},
+}
+
 \graphicspath{{figures/}}
 \ifpdf
   \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
@@ -45,13 +79,13 @@
 \renewcommand{\thesisauthor}{Roland BÁLINT}
 \renewcommand{\thesismonth}{September}
 \renewcommand{\thesisyear}{2026}
-\renewcommand{\thesistitle}{AuthenStickator: a secure and portable TOTP-based authenticator app running on a USB stick}
+\renewcommand{\thesistitle}{\app{}: a TPM-secured TOTP authenticator app running on a USB stick}
 \renewcommand{\thesissupervisor}{Conf. dr. ing. Ciprian Pavel OPRIȘA}
 \newcommand{\utcnlogo}{\includegraphics[width=14.5cm]{img/tucn.jpg}}
 \newcommand{\department}{\textbf{FACULTY OF AUTOMATION AND COMPUTER SCIENCE}\\
 \textbf{COMPUTER SCIENCE DEPARTMENT}\\}
 
-\newcommand{\app}{AuthenStickator}
+\newcommand{\app}{Authenstickator}
 \renewcommand{\t}[1]{\texttt{#1}}
 \renewcommand{\i}[1]{\textit{#1}}
 \renewcommand{\b}[1]{\textbf{#1}}
