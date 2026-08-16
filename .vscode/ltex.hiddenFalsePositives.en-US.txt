@@ -1,0 +1,1 @@
+{"rule":"REP_PASSIVE_VOICE","sentence":"^\\QIf this file does not exist, it is considered that no user password was provided beforehand, so the user is asked to enter a new password.\\E$"}

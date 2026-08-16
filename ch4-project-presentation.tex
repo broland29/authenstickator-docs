@@ -1,5 +1,111 @@
 \chapter{Project Presentation}
 
+\section{The Proposed Framework}
+
+The goal of this Masters' thesis is to provide a generic framework for a TOTP application on a USB stick, as well as an implementation for it.
+In this section, we will focus on the framework, i.e., the ideas and principles, rather than the technology used.
+The presented framework could work on other devices as well, it is a generic flow of actions meant to be abstract.
+At the same time, the framework's main goal is security, so it has to take into account all kinds of attacks and countermeasures for them.
+With that in mind, the framework focuses on minimizing the possibility of exploits, errors, deadlocks.
+
+Simply put, a TOTP application generates TOTP codes (numbers) based on TOTP secrets (base64 codes).
+The application which requires TOTP (example: Gmail, Facebook, etc.) displays a QR code or an equivalent secret.
+The user scans the QR code / introduces the secret into the TOTP application.
+From then on, the TOTP application stores that secret in a way or other, and keeps generating TOTP codes.
+
+So the problem can be reduced to the following aspects/ goals:
+\begin{enumerate}
+    \item
+        \b{Generate the TOTP codes}:
+        This is the main functional requirement of the framework.
+        TOTP code generation is a standard algorithm and requires only the current time and the TOTP secret.
+    \item
+        \b{Store the secrets safely}:
+        Store TOTP secrets in a way which is secure and handle possible attack scenarios.
+    \item
+        \b{Keep the 2FA aspect}:
+        The framework treats the device on which the app runs as the possession factor of Two-Factor Authentication \ref{lab:ch3-two-factor-authentication}.
+        Breaking this aspect would make the framework useless.
+\end{enumerate}
+
+Figure \ref{fig:flows} shows the two main flows of the proposed architecture.
+The following sections will go in depth on each aspect.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/diagram-flows.png}
+    \caption{The two main flows of the proposed framework.}
+    \label{fig:flows}
+\end{figure}
+
+\subsection{USB Encryption} \label{lab:ch4-usb-encryption}
+
+The main security layer is provided by the device on which the app resides: the USB itself shall be encrypted.
+For Linux, a password-protected LUKS2-encrypted USB stick shall be used.
+The encryption of the device applies on its whole content.
+This ensures that the stored secrets cannot be read without providing the password.
+The passwords could be saved in plaintext, the USB encryption would encrypt it anyway.
+
+The main issue of USB sticks (in our context) is that they are not read-only media.
+Someone could steal the USB stick without our knowledge, and copy its contents.
+Stealing and putting back the USB stick could be done in less than a minute, making this kind of attack easy to execute.
+The attacker could then brute-force breaking the USB without any time limitations.
+Or even worse, if the attacker gets to know our password, he/she can break in without having our media, using the copy.
+Nevertheless, USB Encryption is a good first line of attack against not-so tech-savvy attackers.
+
+
+\subsection{User Password}
+
+Aside of the password for the USB's encryption, the framework also requires a user password.
+It is recommended for this password to be different from the password provided for the USB's encryption, but a check for difference is out of scope.
+So it is up to the user what password it chooses for the application.
+We will reference to this as the User Password from now on.
+
+You might ask, what is the purpose of the User Password?
+It is used to encrypt the internal storage of the application, i.e., the secrets.
+While the application's source code, including the storage, is encrypted at rest due to USB Encryption, this encryption ensures the passwords are encrypted even when the app is running.
+This protects against ``coffee-shop'' attacks: the user might leave their device unlocked and unsupervised, and an attacker could quickly read the secrets from their device.
+There are other use-cases of the user password as well, described in later sections.
+
+The user password is not stored.
+Instead, the hash of the user password is stored inside a file.
+If this file does not exist, it is considered that no user password was provided beforehand, so the user is asked to enter a new password.
+If this file does exist at start, the user shall provide the old password, which is verified against the existing hash.
+An incorrect password prevents the start of the flow, since the system has no knowledge about the password, and without it, it cannot decrypt the storage, to access the stored secrets.
+
+
+\subsection{TPM} \label{lab:ch4-tpm}
+
+The read-write nature of a USB cannot be changed, and making a USB stick uncopiable is either impossible or out of scope.
+The encryption with the help of the user password suffers the same vulnerability as the USB encryption, it is just another layer, but breakable in the same fashion.
+Detecting if another TOTP Application is using the secret (for example, if the attacker stole the secret and introduced it into a TOTP application) is also out of scope.
+But, something had to be done against the attack scenario presented in Section \ref{lab:ch4-usb-encryption}.
+This is where the TPM chip comes into discussion, and where we start to exchange convenience for security.
+
+Our framework uses the TPM to get a secret which only one machine can provide, and mix it with the user-provided key.
+How the secret is mixed with the user password is up to the encryption algorithm.
+The most straight-forward option, and also the one implemented by \app{}, is to use the secret as a salt.
+
+Initially, this secret does not exist.
+It has to be random, unpredictable, and long.
+So, the TPM is used to generate it.
+This provides hardware-backed true randomness.
+The secret is then stored inside the TPM's NVRAM.
+This is non-volatile memory, meaning that it will be present after reboot.
+Upon each start, the NVRAM is queried for the secret.
+
+Due to the nature of the TPM chip, the random number cannot be guessed.
+It is 16 bytes long, so brute-forcing it is not feasible.
+Combining with the user password makes it impossible for other applications using the TPM (for example, malware) to decrypt the storage.
+If the combination is properly made (ex: secret used as salt for the key), brute-forcing the decryption will also not be feasible. 
+
+The downside of using TPM is the same as the main upside: it ties the application to a specific machine.
+If the user uses one machine all the time, it is not a problem.
+If the user switches between multiple devices (which support USBs), he/she might consider not using TPM.
+The framework marks TPM usage optional: if disabled, simply the user password is used for storage encryption.
+
+
+
 \section{Architecture}
 
 \begin{figure}[htbp]
@@ -31,7 +137,8 @@ The user can choose through the config file between two encryptor types: \t{NoEn
 
 \subsubsection{NoEncryptor}
 
-\t{NoEncryptor} does what its name suggests: it does not encrypt/ decrypt, it just encodes/decodes. Storage encryption is an additional security layer which can be turned off by choosing this option. This is recommended for development mostly.
+\t{NoEncryptor} does what its name suggests: it does not encrypt/ decrypt, it just encodes/decodes.
+Storage encryption is an additional security layer which can be turned off by choosing this option. This is recommended for development mostly.
 
 
 \subsubsection{AESEncryptor}
@@ -58,15 +165,15 @@ TSS stands for Trusted Software Stack, and it is the software around the TPM chi
 
 \begin{enumerate}
     \item \textbf{FAPI}: Feature API. High-level, developer-friendly. No need to handle sessions and authorization.
-    
+
     \item \textbf{ESAPI}: Enhanced System API. Wraps sessions and handles retries when TPM is busy.
-    
+
     \item \textbf{SAPI}: System API. Low-level C interface implementing the tmp2.0 specifications.
-    
+
     \item \textbf{TCTI}: TPM Command Transmission Interface. The Transport Layer, working with bytes.
 \end{enumerate}
 
-These layers are specifications, and there are different implementations of it. 
+These layers are specifications, and there are different implementations of it.
 
 \app{} uses FAPI. This choice was made since the goal is to have a lightweight and generic app; going lower in the TSS layers would mean more OS/computer specific code, and more chances to make errors.
 
@@ -204,7 +311,7 @@ The command to create a USB export:
 
 We have to specify paths to point to ., so that imports work correctly.
 We put the dist/build/spec paths to the temporary folder, to not clutter the project folder (messes with git and such). Spec path is not set, so the .spec file is generated in the default location, where it is executed (in the project root). This is intentional, since add-data will take paths relative from the .spec file.
-JSON and HTML files are not added by default and need to be added with add-data. See pyinstaller --help for more details. 
+JSON and HTML files are not added by default and need to be added with add-data. See pyinstaller --help for more details.
 \begin{lstlisting}[language=bash]
 pyinstaller src/main.py \
     --clean \
