@@ -203,19 +203,47 @@ An example \t{config.json} looks like this:
 
 The meaning of each configuration parameter will be explained in the corresponding package's section.
 
+\begin{table}[h]
+\centering
+\begin{tabular}{|p{8.2cm}|p{2.1cm}|p{5cm}|}
+\hline
+\b{Config Name}                            & \b{Allowed Values}                                               & \b{Meaning}                                                                      \\ \hline
+\t{logger.log\_level}                          & \t{"ERROR"}, \t{"WARNING"}, \t{"INFO"}, \t{"DEBUG"}\ & The lowest log level which shall be logged.             \\ \hline
+\t{logger.log\_file\_path}                     & A valid path, like \t{"log.txt"}                                  & The path at which the log file shall be saved.          \\ \hline
+\t{pywevview.debug}                            & \t{true}, \t{false}                                       & If pywebview should run in debug mode or not.           \\ \hline
+\t{tpm.enabled}                                & \t{true}, \t{false}                                        & If the TPM (and related functionalities) shall be used. \\ \hline
+\t{tpm.fapi\_profile\_name}                    & todo                                           & todo                                                    \\ \hline
+\t{tpm.fapi\_profile\_file}                    & todo                                           & todo                                                    \\ \hline
+\t{tpm.fapi\_profile\_url}                     & todo                                           & todo                                                    \\ \hline
+\t{tpm.virtualized}                            & todo                                           & todo                                                    \\ \hline
+\t{tpm.virtualized\_tpm\_path}                 & todo                                           & todo                                                    \\ \hline
+\t{tpm.virtualized\_tpm\_port}                 & todo                                           & todo                                                    \\ \hline
+\t{tpm.virtualized\_tpm\_ctrl\_port}           & todo                                           & todo                                                    \\ \hline
+\t{tpm.virtualized\_tpm\_startup\_seconds}     & todo                                           & todo                                                    \\ \hline
+\t{storage.storage\_file\_path}                & todo                                           & todo                                                    \\ \hline
+\t{storage.hashed\_user\_password\_file\_path} & todo                                           & todo                                                    \\ \hline
+\t{encryptor.type}                             & todo                                           & todo                                                    \\ \hline
+\t{hasher.type}                                & todo                                           & todo                                                    \\ \hline
+\end{tabular}
+\end{table}
 
 \subsubsection{Logger}
 
 The logger package contains \t{LoggerManager}, yet another singleton class.
 As its name suggests, the logger manager provides a logger instance for logging.
 The standard \t{logging} library is used.
-For simplicity, \app{} uses only four log levels:
+For simplicity, \app{} uses only four log levels.
+The log level can be set by changing the value of the config \t{logger.log\_level}.
 \begin{itemize}
     \item \b{Error}: for fatal issues, ones which break execution.
     \item \b{Warning}: for issues which should not be ignored, but do not crash the app.
     \item \b{Info}: for messages which are not issues, but things that might help in audit.
     \item \b{Debug}: the most low-level messages; these are useful only for development.
 \end{itemize}
+
+While the logger is centralized, logging happens in two places: the console and the log file.
+The same log lines are printed in both outputs, but the log file persists, meaning that new logs are appended to the old ones instead of starting a new file at each run.
+This is good for debugging and audit.
 
 The format of log lines is: date and time, severity level in a letter (E, W, I, D), the file and the line of the source, the logger, and the message itself. For example:
 
@@ -227,11 +255,16 @@ While there is only one logger instance, \t{pywebview}, the front-end library al
 These are useful, so instead of throwing them out, they are ``propagated'' to our logger.
 This is why the logger is also printed in the log line: it can be either \t{[root]} or \t{[pywebview]}.
 
+As a convention, each class instantiates a logger instance outside its constructor, for simplicity.
+Methods which handle requests from the UI often log on debug level entrance in them.
+As a general rule, secrets and sensitive data shall not be logged.
+Logging such information would make encryption of the storage broken.
+
 \subsubsection{TOTP}
 
 \i{TODO}
 
-\subsubsection{TPM}
+\subsubsection{TPM} \label{lab:ch4-tpm}
 
 \i{TODO}
 
@@ -303,12 +336,131 @@ This mixes its input with a salt, and outputs a fixed length string, making it p
 
 
 
+\section{Provisioning the TPM: a Requirement for the Application}
+
+While the application is bundled with its dependencies, the usage of TPM comes with a cost.
+These chips need to be provisioned, which is a one-time operation to make them run correctly.
+Provisioning a TPM should be an easy process, but it is rather difficult in practice.
+Since provisioning might require authentication, it cannot be done by an automatic script.
+Also, if you mess too much with your real TPM, you might get locked out, just like I did.
+
+If you run a Debian-based distribution, you might try installing with \t{apt} the \t{tpm2-tools} package.
+After installation, try running the \t{sudo -u tss tss2\_provision} command.
+It shall create a default FAPI configuration file at path \t{/etc/tpm2-tss/fapi-config.json}, and automatically download some profiles in \t{/etc/tpm2-tss/fapi-profiles/}.
+For more details about this JSON, see Section \ref{lab:ch4-tpm}.
+
+Unfortunately, the \t{tpm2-tools} package from \t{apt} did not work for me, and might not work for you neither.
+If this is the case, you can try running the \t{setup\_fapi.sh} script.
 
 \section{Development}
 
-Development was done on a Linux machine (POP OS) and a test run for the following commands was performed on an Ubuntu 22 virtual machine.
+Development was done on a Linux machine, namely on Pop!\_OS 22.04 LTS.
+The development environment described below was tested on a virtual machine with a fresh Ubuntu 22.04.5 LTS installation.
+As a result, the following commands will probably work on Debian-based Linux distributions.
+The IDE used throughout development was PyCharm IDE, but other editors shall work as well.
+
+\subsection{Basic Setup}
+
+First, ensure that your system has Python.
+Use the following command:
+\begin{lstlisting}[language=bash]
+python3 --version
+\end{lstlisting}
+Both the development machine and the test VM used Python 3.10.12, which came with the OS installation.
+So, if you have Python-related issues, try this specific version.
+
+Then, Git is used for version control.
+The source code of \app{} is available on GitHub as a public repository, and we will clone the project from there.
+\begin{lstlisting}[language=bash]
+sudo apt install -y git
+git clone https://github.com/broland29/authenstickator.git
+cd authenstickator
+\end{lstlisting}
+
+Next, you will need to create a virtual environment and activate it.
+A virtual environment (\t{venv}) is used to isolate Python packages used for \app{} from other Python packages on the system.
+This is standard dependency management, and ensures not just that \app{} works well, but that we don't break other apps.
+Each developer creates its own virtual environment and these are not pushed to git (specified in \t{.gitignore}).
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install -y python3.10-venv
+python3 -m venv venv
+source venv/bin/activate
+\end{lstlisting}
+
+Before installing the Python dependencies from \t{requirements.txt}, there are other Linux packages required for the Python packages to work.
+These include: a build compiler, the TPM2 development headers and build tools, some FAPI requirements (TPM-related), and some \t{PyGObject} requirements (\t{pywebview}/ UI related).
+For development, to avoid TPM lockout, a software TPM, \t{swtpm} is recommended, which also needs installation.
+Be careful with the following command: if you accidentally leave spaces after the line-breaking backslashes, it won't work.
+\begin{lstlisting}[language=bash]
+sudo apt install -y git \
+    libtss2-dev pkg-config python3-dev \
+    libssl-dev libjson-c-dev libcurl4-openssl-dev \
+    libgirepository1.0-dev libcairo2-dev libglib2.0-dev gobject-introspection \
+    swtpm
+\end{lstlisting}
+
+Now that we have the dependencies ready, we can install the actual Python libraries \app{} needs.
+Since we have the virtual environment activated (signaled by the \t{(venv)} prompt), the libraries will be installed only inside this environment.
+The requirements are listed in \t{requirements.txt} and can be installed with the following command:
+\begin{lstlisting}[language=bash]
+pip install -r requirements.txt
+\end{lstlisting}
+
+Once it is done installing, the app can be started.
+Remember that, for subsequent launches, you will also need to activate the virtual environment before starting the app.
+\begin{lstlisting}[language=bash]
+python3 -m src.main
+\end{lstlisting}
 
 
+\subsection{Testing with TPM on a VM}
+If you wish to test the application with the real TPM setting, but still want to avoid using your own TPM and getting locked out, you can use a Virtual Machine.
+My recommendation is QEMU/KVM, since it is easy to set up and works well.
+The following steps for TPM setup are for QEMU/KVM 4.0.0.
+Turn of the virtual machine if it is currently running.
+Inside the ``Show virtual hardware details'' panel (the icon containing the letter I, when the VM is selected), click ``Add Hardware''.
+Select TPM.
+Inside ``Advanced options'', select Model ``CRB'' and Version ``2.0''.
+Click finish, and start the VM.
+
+\subsection{Setup TPM}
+First, check if you actually have a TPM chip with the following commands:
+\begin{lstlisting}[language=bash]
+sudo dmesg | grep -i tpm
+ls -l /dev/tpm0 /dev/tpmrm0
+\end{lstlisting}
+
+If the output contains log files like below, good news, you have a TPM chip and can move to the next step.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/tpm-present.jpeg}
+    \caption{The \t{dmesg} logs contain such lines if TPM is present.}
+    \label{fig:tpm-present}
+\end{figure}
+
+
+Unfortunately, the \t{tpm2-tools} package from \t{apt} does not work.
+You can try your luck with these commands though. 
+\begin{lstlisting}[language=bash]
+sudo apt install -y tpm2-tools
+sudo -u tss tss2_provision
+\end{lstlisting}
+For me, this did not work, I got a command not found error.
+The alternative is to compile \t{tpm2-tools} from source.
+It is very fast and shall work out of the box.
+\begin{lstlisting}[language=bash]
+sudo apt install -y build-essential autoconf autoconf-archive automake libtool pkg-config gcc git libssl-dev libcurl4-openssl-dev libjson-c-dev uuid-dev libtss2-dev
+cd ~
+git clone https://github.com/tpm2-software/tpm2-tools.git
+cd tpm2-tools
+./bootstrap
+./configure --enable-fapi
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+sudo -u tss tss2_provision
+\end{lstlisting}
 
 
 
@@ -360,11 +512,9 @@ FAPI needs a one-time initialization, called provisioning. This can be done with
 
 
 
-Development was done using PyCharm IDE. The setup is a standard one. Git is used for version control, and the repo can be found on GitHub. Virtual environments are used (\t{venv}). The generated folder in \t{.gitignore}, i.e. not part of the source control, since each developer will create his/her own environment, and installed libraries are not meant to be under source control.
 
 The standard development starts with cloning the project.
 
-First, you need Python. Ubuntu came with Python preinstalled, command \t{python3 --version} gave output \t{Python 3.10.12}.
 
 
 \begin{lstlisting}[language=bash]
