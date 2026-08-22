@@ -1,13 +1,96 @@
-@misc{rfc6238,
-  author = {David M'Raihi and Salah Machani and Ming Pei and Johan Rydell},
-  title = {{TOTP: Time-Based One-Time Password Algorithm}},
-  howpublished = {RFC 6238},
-  publisher = {RFC Editor},
-  year = {2011},
-  month = {May},
-  url = {https://www.rfc-editor.org/info/rfc6238},
-  doi = {10.17487/RFC6238}
+@misc{yubikey,
+  author       = {yubico},
+  title        = {How the YubiKey works},
+  howpublished = {\url{https://www.yubico.com/products/how-the-yubikey-works/}},
+  note         = {Accessed: August 21, 2026}
 }
+
+@inproceedings{eukleak,
+  author    = {Roche, Thomas},
+  booktitle = {2025 IEEE Symposium on Security and Privacy (SP)},
+  title     = {EUCLEAK Side-Channel Attack on the YubiKey 5 Series (Revealing and Breaking Infineon ECDSA Implementation on the Way)},
+  year      = {2025},
+  volume    = {},
+  number    = {},
+  pages     = {4026-4043},
+  keywords  = {Privacy;Microcontrollers;Web services;Prevention and mitigation;Cloning;Side-channel attacks;Libraries;Hardware;Electromagnetics;Microprogramming;side-channel attack;yubikey;ecdsa;extended euclidean algorithm},
+  doi       = {10.1109/SP61157.2025.00219},
+  note      = {Also available online: \url{https://ninjalab.io/wp-content/uploads/2024/09/20240903_eucleak.pdf}}
+}
+
+@misc{2faexplanation,
+  author       = {{Fortinet}},
+  title        = {What is Two-Factor Authentication (2FA), and How can it be Enabled?},
+  howpublished = {\url{https://www.fortinet.com/resources/cyberglossary/two-factor-authentication}},
+  note         = {Accessed: August 8, 2026}
+}
+
+@article{2facriticism,
+  title     = {Two-factor authentication: too little, too late},
+  author    = {Schneier, Bruce},
+  journal   = {Communications of the ACM},
+  volume    = {48},
+  number    = {4},
+  pages     = {136},
+  year      = {2005},
+  publisher = {ACM New York, NY, USA}
+}
+
+@article{2fastudy,
+  author = {Meyer, Lucas and Romero, Sergio and Bertoli, Gabriele and Burt, Tom and Weinert, Alex and Lavista Ferres, Juan},
+  year   = {2023},
+  month  = {05},
+  title  = {How effective is multifactor authentication at deterring cyberattacks?},
+  doi    = {10.48550/arXiv.2305.00945}
+}
+
+@misc{hotp,
+  series       = {Request for Comments},
+  number       = 4226,
+  howpublished = {RFC 4226},
+  publisher    = {RFC Editor},
+  doi          = {10.17487/RFC4226},
+  url          = {https://www.rfc-editor.org/info/rfc4226/},
+  author       = {D. M'Raihi and M. Bellare and F. Hoornaert and D. Naccache and O. Ranen},
+  title        = {{HOTP: An HMAC-Based One-Time Password Algorithm}},
+  pagetotal    = 37,
+  year         = 2005,
+  month        = dec
+}
+
+@misc{totp,
+  series       = {Request for Comments},
+  number       = 6238,
+  howpublished = {RFC 6238},
+  publisher    = {RFC Editor},
+  doi          = {10.17487/RFC6238},
+  url          = {https://www.rfc-editor.org/info/rfc6238/},
+  author       = {D. M'Raihi and S. Machani and M. Pei and J. Rydell},
+  title        = {{TOTP: Time-Based One-Time Password Algorithm}},
+  pagetotal    = 16,
+  year         = 2011,
+  month        = may
+}
+
+% Datatracker information for RFCs on the Legacy Stream is unfortunately often
+% incorrect. Please correct the bibtex below based on the information available
+% at https://www.rfc-editor.org/info/rfc2898/
+
+@misc{pbkdf2,
+  series       = {Request for Comments},
+  number       = 2898,
+  howpublished = {RFC 2898},
+  publisher    = {RFC Editor},
+  doi          = {10.17487/RFC2898},
+  url          = {https://www.rfc-editor.org/info/rfc2898/},
+  author       = {B. Kaliski},
+  title        = {{PKCS \#5: Password-Based Cryptography Specification Version 2.0}},
+  pagetotal    = 34,
+  year         = 2000,
+  month        = sep
+}
+
+
 
 @book{Arthur2015,
   author    = {Arthur, Will and Challener, David and Goldman, Kenneth},
@@ -17,12 +100,7 @@
   doi       = {10.1007/978-1-4302-6584-9}
 }
 
-@misc{fortinet2FA,
-  author       = {{Fortinet}},
-  title        = {What is Two-Factor Authentication (2FA), and How can it be Enabled?},
-  howpublished = {\url{https://www.fortinet.com/resources/cyberglossary/two-factor-authentication}},
-  note         = {Accessed: August 8, 2026}
-}
+
 
 @misc{pi3g_tpm_2025,
   author       = {{pi3g}},
