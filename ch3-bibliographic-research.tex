@@ -260,7 +260,7 @@ After provisioning, the application stores the secret.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{img/authenticators.png}
+    \includegraphics[width=0.7\textwidth]{img/authenticators.png}
     \caption{Authenticator apps. Source: Google Play.}
     \label{fig:authenticators}
 \end{figure}
@@ -268,9 +268,90 @@ After provisioning, the application stores the secret.
 
 \section{Encryption and AES}
 
-The app uses diffent encryption algorithms.
+``Encryption is the process of transforming readable plain text into unreadable ciphertext to mask sensitive information from unauthorized users.''\footnote{\url{https://www.ibm.com/think/topics/encryption}}.
+It is a two-way operation: a plaintext can be encrypted into ciphertext, and a ciphertext can be decrypted into plaintext.
+Encryption and decryption happens with the help of keys (secrets).
+If the same key is used both for encryption and decryption, the algorithm is a symmetric encryption algorithm.
+Asymmetric encryption uses two keys: a public key for encryption and a private key for decryption.
+
+Both asymmetric and symmetric encryption algorithms have strenghts and weaknesses.
+Asymmetric encryption is slower, but more secure since eliminates the need of key exchange.
+Symmetric is faster, but the key has to be exchanged.
+Usually (ex: for TLS), asymmetric encryption is used to exchange a symmetric key, and from then on, symmetrix encryption is used (for a given time period, after which a new key is exchanged, the old key becoming expired).
+Encryption is a must-have for sending sensitive information through untrusted media, like the internet, but also essential to make sure data at rest is protected (file encryption, disk encryption, database encryption).
+
+The Rijndael Cipher is the winner of the AES competition\cite{aes}.
+It is the golden standard of symmetric encryption algorithms.
+It transforms a plaintext of a given size into a ciphertext of the same size.
+The plaintext is encoded in hexadecimal, and split into 128-bit blocks.
+One block can be represented as a 4 by 4 matrix, where each cell contains two hexadecimal characters.
+Since each hexadecimal character can represent 2 bytes, one cell is 4 bytes, one row is 16 bytes, and the whole matrix is 128 bytes (4 rows).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{img/aes-encryption-steps.jpeg}
+    \caption{AES encryption steps. Source: Forma Estudio.\cite{aesanimation}.}
+    \label{fig:aes-encryption-steps}
+\end{figure}
+
+The AES algorithm repeatedly applies four types of transformations as depicted in Figure \ref{fig:aes-encryption-steps}.
+The figures in this section are from the Rijandael (AES) Animation made by Forma Estudio\cite{aesanimation}.
+This animation explains the algorithm much better than my text, but here is my attempt.
+The transformations are:
+\begin{enumerate}
+    \item \b{SubBytes}.
+        Uses an S-BOX, i.e., a lookup table.
+        Each cell is substituted (changed) with a value from the S-BOX.
+        The value is chosen by taking the first byte from the cell to select the row, and taking the second byte to select the column.
+    \item \b{ShiftRows}.
+        Each row is rotated to the left with its index.
+        The first row stays as-is, the second is rotated 1, the third is rotated 2, and the fourth is rotated 3.
+    \item \b{MixColumns}.
+        Each column is Galois-multiplied by a specific matrix.
+        Galois-multiplication is a special type of multiplication, which gives results in the same set as its inputs.
+        So this is yet another step to mix bytes up deterministically.
+    \item \b{AddRoundKey}.
+        The round key is XOR-ed with the current matrix (explained later).
+\end{enumerate}
+
+The \b{AddRoundKey} step mentions a round key.
+Round key comes from the Key Scheduling part of the Rijandael algorithm.
+The cipher key (input of the algorithm) is expanded into eleven partial keys: one for the initial round, nine for the main rounds, and one for the final round.
+We can visualize the cipher key as a matrix yet again, and the round keys will be generated to its right, column by column (see: Figure \ref{fig:aes-key-schedul}).
+Starting with the cipher key, up until all the columns are generated, the steps below are performed.
+Note that, the steps marked with \b{*} are performed only if the column's position is a multiple of 4.
+For the rest of the columns, only XOR applies.
+\begin{enumerate}
+    \item \b{RotWord*}.
+         the column is rotated once, in upside direction.
+    \item \b{SubBytes*}
+        Same as for enctyption, using the same S-BOX.
+    \item \b{XOR}
+        The column is XOR-ed with the column 4 positions to the left.
+    \item \b{Add*}
+        The column is summed with a column from a specific constant matrix (Rcon) 
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{img/aes-key-schedule.jpeg}
+    \caption{AES Key Schedule. Source: Forma Estudio.\cite{aesanimation}.}
+    \label{fig:aes-key-schedule}
+\end{figure}
+
+Now the amazing part is that encryption can be done the same way, but by reversing everything.
+Instead of adding a matrix, we subtract it.
+Instead of shifting to one direction, we shift to the opposite direction.
+For substitution, we do the inverse substitution.
+And Galois-multiplication has its inverse operation as well.
+While some of these operations look complicated graphically, computers are really good at performing them, making encryption and decryption fast.
+For its strong security, open-source nature and performance, AES is used in almost all cases when symmetric encryption is needed.
+
+
 
 \section{Password-Based Key Derivation. PBKDF2}
+
+
 
 ``In cryptography, a key derivation function (KDF) is a cryptographic algorithm that derives one or more secret keys from a secret value such as a master key, a password, or a passphrase using a pseudorandom function (which typically uses a cryptographic hash function or block cipher)''\footnote{\url{https://en.wikipedia.org/wiki/Key_derivation_function}}.
 They are often used when keys need to be stretched or need to have a certain format.
@@ -359,15 +440,91 @@ DK = T_1 \parallel T_2 \parallel \dots \parallel T_l \langle 0 \dots r-1 \rangle
 
 \section{Hashing and Argon2}
 
+``Hashing is a process that converts any input to a fixed-length, seemingly random output.''\footnote{\url{https://www.bitdefender.com/en-us/business/infozone/what-is-hashing}}.
+For a function to be called hashing function, it has to fulfill certain criteria, aside of giving the same length output for any length input.
+First of all, it has to be a one-way function.
+Unlike for encryption, where we want the ciphertext to be decryptable, in case of hashing, it shall be impossible to convert the output of a hash function back to the input which it came from.
+Hashes are compared between each other, or used as they are, but never reversed.
+
+Then, it has to have good collision resistance.
+Since we convert to a fixed size string, multiple inputs will give the same output, inevitably.
+It is like parking infinite cars, in seemingly random order, into finite parking lots.
+At one point, parking lots will fill up, and two cars will have the same lot.
+This means that, if used for password storage and authentication, there is a mathematical chance that two passwords give the same hash, even with salting.
+This would mean logging in with an incorrect password.
+The catch is that for hash functions with good collision resistance, the chances are terribly low.
+For example, for the MD5 algorithm, which was broken in 2004 (it was shown that it is not collision-resistant), the probability to have two passwords producing the same hash is $\frac{1.47}{10^{29}} = 0.0000000000000000000000000000147\%$.\footnote{\url{https://infosecscout.com/two-passwords-same-hash/}}.
+
+The third criterion for a hash function to be considered usable is to be deterministic, not random.
+That is why, in the last paragraph's analogy, I said ``seemingly random''.
+The same input must give the same output all the time.
+Otherwise, it would just be a random number generator, without the current practical use cases.
+
+Hash functions are used for various purposes, out of which the most common are:
+\begin{itemize}
+    \item \b{Password storage.}
+        Databases are often leaked, so storing the hash of a password instead clear text is the 101 of cybersecurity.
+        In this case, it is extremely important to use a strong hashing algorithm, with proven collision resistance.
+    \item \b{Fast look-up data structures.}
+        Hash maps, for example, are often used where data has to be retrieved in \t{O(1)} time complexity.
+        If we want to look for something, we compute its hash, which is the address it is supposed to be at.
+        This way, we can instantly look up data.
+        Collision resistance in this use-case is important for maintaining the speed advantage, not for security.
+    \item \b{File signatures.}
+        A hash function can take the contents of a whole file and convert it into a much shorter hash.
+        This way, we get a unique value, a signature for each file (again, given that no collisions happen).
+        We can easily check if a file changed, by looking at the previous and current signature.
+        File signatures are also used for static malware analysis: we can take the hash of a program, feed it to a database like \url{https://www.virustotal.com}, and check if it is a reported malware.
+\end{itemize}
+
+Argon2\cite{argon2} is a password hashing algorithm, the winner of the Password Hashing Competition.
+``PHC ran from 2013 to 2015 as an open competition—the same kind of process as NIST's AES and SHA-3 competitions, and the most effective way to develop a crypto standard.
+We received 24 candidates, including many excellent designs, and selected one winner, Argon2, an algorithm designed by Alex Biryukov, Daniel Dinu, and Dmitry Khovratovich from University of Luxembourg.''\footnote{\url{https://www.password-hashing.net/}}.
+
+The algorithm aims to maximize the cost of password cracking on Application-Specific Integrated Circuits (ASICs).
+An ASIC is An ``integrated circuit designed for a specific customer, application, or market (\dots) interconnected, and simulated to provide the desired system functions and level of performance.'' \footnote{\url{https://www.analog.com/media/en/analog-dialogue/volume-24/number-3/articles/volume24-number3.pdf\#page=12}}.
+In this context, it refers to hardware specialized for password cracking.
+The advanced attackers who use such software often exploit parallelization (on GPUs, FPGAs, with more cores), they compute blocks ahead, they juggle with time-memory tradeoff (``the adversary can trade memory for time and do his job on fast hardware with low memory.''\cite{argon2}).
+
+Argon2 takes all these aspects into account, and comes with a solution in two flavors: Argon2d and Argon2i.
+Argon2d is faster and uses data-depending memory access, suitable for cryptocurrencies, for example.
+Argon2i is slower and uses data-independent memory access, which is preferred for password hashing.
+Data-dependent indexing takes into account the password when choosing the memory index to write to, this way making it impossible to prefetch and precompute missing data.
+Some software, like Bitwarden, use Argon2id, which uses ``a combination of data-depending and data-independent memory accesses, which gives it some of Argon2i's resistance to side-channel cache timing attacks and much of Argon2d's resistance to GPU cracking attacks.''\footnote{\url{https://bitwarden.com/help/kdf-algorithms/}}
+
+The mathematics behind Argon2 are out of scope for this document, but simply said, the algorithm consists of three steps.
+First, memory initialization fills a defined memory size with pseudorandom values derived from the password, salt, and other parameters.
+Then, the memory's contents are repeatedly combined with the password and the salt.
+After all the iterations, the used memory is compressed into a fixed-size output (the hash).\footnote{\url{https://jumpcloud.com/it-index/what-is-argon2}}.
+All this makes Argon2 an outstanding choice for password hashing, proven to be up-to-date with today's attackers.
 
 
 
 
-\section{Disk Encryption and LUKS}
-
-For encrypting the USB stick for Linux.
 
 
+\section{Full Disk Encryption and LUKS}
+
+Full disk encryption, as its name suggests, refers to encrypting every byte of a physical disk.
+This mechanism is especially powerful since it provides a layer of security for the whole contents of a machine.
+It also works for removable media.
+With full disk encryption, an attacker's physical access does no longer mean compromised data.
+With powerful encryption, brute-forcing decryption of a full disk takes so much time that it is virtually impossible.
+``LUKS (Linux Unified Key Setup) is the standard disk encryption format for Linux, built on top of the dm-crypt kernel module.
+It is the encryption layer used by default when you select “encrypt disk” during installation on Fedora, Ubuntu, Debian, and most other major distributions.''\footnote{\url{https://secure-os.org/articles/luks-encryption/}}.
+
+It uses PBKDF2 to enhance weak user passwords and has a two level key hierarchy.\cite{luks}
+This means that a master password is generated, which is not shared with the user, and the user's password is used to encrypt this master password, which is then stored in a slot.
+There are several such slots (key material sections) in the LUKS header, meaning that multiple passwords can be used to decrypt the disk.
+As a result, one can have a recovery key along the usual user password.
+
+The LUKS header is the first few bytes of the disk which contains metadata needed for decryption (the algorithm, the KDF etc.).
+It is a good idea to have a periodic backup of the LUKS header, since if this part of the memory is damaged, the whole disk becomes inaccessible.
+It is a single point of failure, but there is no free meal.
+
+LUKS2, the newer variant of LUKS, is a good option for encrypting disks and USB devices.
+As with other cryptographic algorithms, there have been vulnerabilities in their implementation: in 2016, you could gain access by simply holding the enter button.\footnote{\url{https://hmarco.org/bugs/CVE-2016-4484/CVE-2016-4484_cryptsetup_initrd_shell.html}}.
+But it is a good standard, and its open-source implementation is patched regularly.
 
 
 
