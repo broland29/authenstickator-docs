@@ -266,7 +266,7 @@ After provisioning, the application stores the secret.
 \end{figure}
 
 
-\section{Encryption and AES}
+\section{Encryption and AES} \label{lab:ch3-aes}
 
 ``Encryption is the process of transforming readable plain text into unreadable ciphertext to mask sensitive information from unauthorized users.''\footnote{\url{https://www.ibm.com/think/topics/encryption}}.
 It is a two-way operation: a plaintext can be encrypted into ciphertext, and a ciphertext can be decrypted into plaintext.
@@ -349,7 +349,7 @@ For its strong security, open-source nature and performance, AES is used in almo
 
 
 
-\section{Password-Based Key Derivation. PBKDF2}
+\section{Password-Based Key Derivation. PBKDF2} \label{lab:ch3-pbkdf2}
 
 
 
@@ -438,7 +438,7 @@ DK = T_1 \parallel T_2 \parallel \dots \parallel T_l \langle 0 \dots r-1 \rangle
 \end{equation}
 
 
-\section{Hashing and Argon2}
+\section{Hashing and Argon2} \label{lab:ch3-argon2}
 
 ``Hashing is a process that converts any input to a fixed-length, seemingly random output.''\footnote{\url{https://www.bitdefender.com/en-us/business/infozone/what-is-hashing}}.
 For a function to be called hashing function, it has to fulfill certain criteria, aside of giving the same length output for any length input.
@@ -501,9 +501,7 @@ All this makes Argon2 an outstanding choice for password hashing, proven to be u
 
 
 
-
-
-\section{Full Disk Encryption and LUKS}
+\section{Full Disk Encryption and LUKS} \label{lab:ch3-luks}
 
 Full disk encryption, as its name suggests, refers to encrypting every byte of a physical disk.
 This mechanism is especially powerful since it provides a layer of security for the whole contents of a machine.
@@ -528,21 +526,40 @@ But it is a good standard, and its open-source implementation is patched regular
 
 
 
-\section{TPM}
+\section{TPM} \label{lab:ch3-tpm}
 
-``A Trusted Platform Module, also known as a TPM, is a cryptographic coprocessor that is present on most commercial PCs and servers'' \cite{Arthur2015}.
+``A Trusted Platform Module, also known as a TPM, is a cryptographic coprocessor that is present on most commercial PCs and servers'' \cite{tpmbook}.
+This chip provides hardware-backed cryptographic primitives upon which software applications can build on.
+Usually, when TPM is mentioned, it refers to the chip, which can come from different manufacturers, but must implement the specification defined by the Trusted Computing Group.
 
+There are two main TPM specifications, one of them being TPM 1.2 (ISO/IEC 11889:2009) and the newer one being TPM 2.0 (ISO/IEC 11889:2015).\footnote{\url{https://en.wikipedia.org/wiki/Trusted_Platform_Module}}.
+TPM 2.0 is not backward compatible with TPM 1.2.
+While both specify similar features, TPM 2.0 is broader and is being pushed over its predecessor.
+Since 2016, Microsoft has required all new PCs shipping with Windows 10 to include TPM 2.0 support.
+When they released Windows 11 in 2021, the requirements contained TPM 2.0 support.
+This caused major backlash, since many older PCs did not (and still do not) have this.
+It is hard to find up-to-date exact statistics related to TPM 2.0 adoption rate, probably the least speculative number comes from Windows 11 adoption, as published by Microsoft (given that we trust them).
+In March the 3rd, 2026, they stated that ``Windows 11 Dominates Desktop Share in 2026: ~73\% of Windows PCs''.\footnote{\url{https://windowsforum.com/windows-news.4/windows-11-dominates-desktop-share-in-2026-73-of-windows-pcs.403819/?spm=a2700.accio_bizSeo.0.0.180331dah3UXgl}}.
+We can assume that most of these machines have TPM 2.0 (with some technical knowledge, or endorsement from Microsoft, this requirement can be bypassed).
 
+A TPM is often refered to as a cryptographic coprocessor, a hardware security module (HSM) or a hardware root of trust (HToT).\cite{tpmpdf}
+Its cryptographic functionalities include Random Number Generation (RNG), key generation, provides hashing functions and Hash Based Message Authentication Code (HMAC), as well as implementations for SHA-1, SHA-256, SHA-384, RSA,
+ECC, AES, SM4 and XOR.
+It also comes with volatile and non-volatile memory.
+Volatile memory is used for authorization sessions and storing active keys.
+Non-volatile memory has modules such as the Platform Configuration Registers (PCRs) and a limited Non-Volatile Random Access Memory (NVRAM).
 
-\section{Attack Types}
+The primary scope of TPM is to verify integrity during the boot process.
+Its PCRs contain values which can be used ``to cryptographically record (measure) software state: both the software running on a platform and configuration data used by that software.''\cite{tpmbook}.
+The state is hashed and the hash is used when booting to verify is the system was altered or not.
 
+The NVRAM is used to store two types of data: data structures defined by the TPM architecture and unstructured data defined by a user.
+An example use case mentioned by \cite{tpmbook} is storing a secret.
+This memory is very limited in size, so it is not for storing large files.
+Instead, the encryption key for a large file could be stored.
 
-
-
-\section{Testing Principles}
-
-
-
-\section{Programming Patterns}
-
-
+All in all, TPM 2.0 provides various hardware-backed cryptographic primitives, which could be used by the OS, but also by software running on a machine.
+The TPM in itself is not a solution to all security problems neither.
+Probably the biggest criticism of it came from the VeraCrypt developers, stating that ``The only thing that TPM is almost guaranteed to provide is a false sense of security.''\footnote{\url{https://veracrypt.io/en/FAQ.html}}.
+Indeed, if the device is stolen, it is just a matter of time, technical skills and available resources before it is bypassed.
+However, using its cryptographic primitives instead of software solutions is undoubtably stronger, with one catch - we have to trust the TPM manufacturer and vendor.

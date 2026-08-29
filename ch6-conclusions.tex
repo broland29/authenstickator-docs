@@ -1,1 +1,17 @@
 \chapter{Conclusions}
+
+
+
+\section{Further improvements} \label{lab:c6-further-improvements}
+
+\app{} does not support TPM operations on Windows.
+While I would have loved to make it work on Windows as well, it simply looks like TPM development is not meant to be done on Windows unless you are a TPM expert.
+The \t{tpm2-pytss} library does not support Windows\footnote{\url{https://github.com/tpm2-software/tpm2-pytss/issues/597\#issuecomment-2556916125}}, and there are no similar libraries for Windows.
+So writing equivalent FAPI code was not an option.
+The remaining solution was to go low level, calling the TPM 2.0 commands directly (\t{TPM2\_NV\_ReadPublic}, \t{TPM2\_GetRandom}, \t{TPM2\_NV\_DefineSpace}, \t{TPM2\_NV\_Write}, \t{TPM2\_NV\_Read}).
+The only way I found to call these was through the \t{Tbsip\_Submit\_Command} C API.\footnote{\url{https://learn.microsoft.com/en-us/windows/win32/api/tbs/nf-tbs-tbsip_submit_command}}
+This API expects you to build the commands byte by byte.
+I found no examples online of how to use it.
+AI sketched me an example of how the code working on Linux would look like with calls to this API, and it gave me more than 200 lines of byte-manipulating code.
+Unfortunately, my current TPM knowledge is not deep enough to write and document such code, nor do I wish to write such low-level code for something that should be a few lines, but isn't, since Windows.
+I also had the idea to use WSL, but it looks like WSL has no access to the physical TPM.

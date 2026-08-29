@@ -1,13 +1,28 @@
 
 \chapter{Theoretical and Experimental Results} \label{ch5-theoretical-and-experimental-results}
 
-\section{Testing on Linux}
+\section{Unit Testing}
+
+\section{Manual Testing}
+
+\section{Testing on Linux VM}
 
 Since the most popular distro is Ubuntu\footnote{2025 Stack Overflow Developer Survey: \url{https://survey.stackoverflow.co/2025/technology}}, I chose to test and build on a Ubuntu 22.04 LTS machine. Ubuntu 20.04 LTS hit its Standard Security
 Maintenance deadline at May 2025, while 22.04 LTS is still in free support until May 2027. Distros shall be backward compatible, so the results shall be the same for newer Ubuntu releases as well, and the setup will probably work on Debian and other Debian-based distros as well.
 
 
-\section{Unit tests}
+
+If you wish to test the application with the real TPM setting, but still want to avoid using your own TPM and getting locked out, you can use a Virtual Machine.
+My recommendation is QEMU/KVM, since it is easy to set up and works well.
+The following steps for TPM setup are for QEMU/KVM 4.0.0.
+Turn of the virtual machine if it is currently running.
+Inside the ``Show virtual hardware details'' panel (the icon containing the letter I, when the VM is selected), click ``Add Hardware''.
+Select TPM.
+Inside ``Advanced options'', select Model ``CRB'' and Version ``2.0''.
+Click finish, and start the VM.
+
+
+\section{Testing on Windows VM}
 
 For unit tests, the \t{pytest} library was used. To run all tests, with the virtual environment activated, run the following command:
 \begin{lstlisting}[language=bash]
