@@ -444,7 +444,7 @@ It is worth noting that the same input creates different hashes, so verification
 The latter would not give correct results.
 
 
-\subsubsection{Policies for the user password.}
+\subsubsection{Policies for the user password.} \label{lab:ch4-password}
 
 The \t{PasswordManager} class implements the password policies for \app{}.
 It is generally a good practice to extract password management into a separate class or module, to apply the same rules everywhere.
@@ -634,13 +634,279 @@ And, let's be real, how many TOTP secrets can a user have at most?
 
 
 
-
 \subsection{View} \label{lab:ch4-view}
+
+The view module of the application was implemented in CSS, HTML and vanilla JavaScript.
+Although these are technologies usually associated with web applications, \app{} is completely offline.
+It uses the \t{pywebview} library to make this possible.
+``pywebview is a lightweight BSD-licensed cross-platform wrapper around a webview component.
+pywebview allows to display HTML content in its own native GUI window.
+It gives you power of web technologies in your desktop application, hiding the fact that GUI is browser based.
+pywebview ships with a built-in HTTP server, DOM support in Python and window management functionality.''\footnote{\url{https://pywebview.flowrl.com/}}.
+
+I wanted to avoid choosing a niche technology, and I also wanted something lightweight and simple.
+For the purpose of \app{}, standard elements were needed, mostly just inputs, labels, and buttons.
+The fact that I chose HTML and CSS for the view made it such that the code base is easy to understand, universal, so to say.
+JavaScript was needed to intercept user actions, but the view is not completely ``dumb''.
+For example, it calculates the remaining time until TOTP code expiration, since it is more efficient to do this on the front-end.
+It also periodically calls the backend for retrieving new TOTP codes.
+So, as long as there is a reason to have it there, and it does not handle sensitive information, logic is also put inside JavaScript methods.
+
+\subsubsection{How HTML files are structured.} \label{lab:ch4-html}
+
+Instead of having one huge index.html and a big spaghetti code, I chose to define different views and embed them inside index.html.
+These views are defined based on what the intent of the user is when it is on them, namely: \t{register.html}, \t{login.html}, \t{totp.html}, and \t{changepassword.html}.
+This way, the main file (\t{index.html}) becomes just a container, the holder of the \t{viewDiv}.
+Initially, this div contains the text \t{Loading...}, but immediately after loading the app, it is switched to either \t{register.html} or \t{login.html}.
+
+The \t{index.html} file links the CSS file and the scripts (JavaScript files) inside its \t{head} block.
+It also displays the big ``\app{}'' text, which is permanent on each view.
+Inside a \t{script} block, there are two globals defined, \t{RESPONSE} and \t{VIEW\_PATH}, but more on this later.
+The most important point is that here lies an event listener which catches when the view is loaded (\t{pywebviewready} envent), after which the JS API is called, and execution gets under control.
+From this point on, depending on user actions, the views will be changed.
+
+\subsubsection{The views and their elements.} \label{lab:ch4-views}
+
+The very first view a user will see is the register view (see: Figure \ref{fig:register-view}).
+\t{register.html} contains an input for a new password.
+Focus is automatically put inside this input, so the user can start typing instantly.
+There is an enter button, which is also clicked if the user is inside the input and presses the enter button.
+The maximum characters allowed inside the input is limited.
+
+If there was a password provided beforehand, the login view will appear instead of the register view (see: Figure \ref{fig:login-view}).
+This is almost identical in shape, but the labels and the intent differs.
+This time, if enter is pressed or the unlock button is pressed, the password is verified against the old password's hash.
+If it does not match, an error message is displayed.
+Error messages appear with red color, while success messages appear with green.
+Both are displayed inside \t{messageParagraph}, a \t{p} element which shall be present on each view.
+There is no wiping mechanism or anything, the next message simply overwrites the current message each time.
+
+\begin{figure}[htbp]
+    \begin{subfigure}{.5\textwidth}
+      \centering
+      \includegraphics[width=1\linewidth]{img/register-view.png}
+      \caption{Register view.}
+      \label{fig:register-view}
+    \end{subfigure}
+    \begin{subfigure}{.5\textwidth}
+      \centering
+      \includegraphics[width=1\linewidth]{img/login-view.png}
+      \caption{Login view.}
+      \label{fig:login-view}
+    \end{subfigure}
+    \caption{The first thing the user sees is either the register or the login view.}
+\end{figure}
+
+In case of success, both from the register and the login view we get to the TOTP view (see: Figure \ref{fig:totp-view}).
+This is the main view of the application, since this is where the actual functionalities reside.
+At the top, the user has the ability to enter a TOTP secret in two ways: either manually of through decoding a QR.
+To add manually, the user has to enter the TOTP secret into the secret field, and also give it a unique name in the name field, after which, the Add button shall be clicked.
+If there is a secret which was added previously and has the same name as the one the user wants to add, an error message is shown.
+The secret is also checked to be valid (see: Section \ref{lab:ch4-totp}).
+
+Adding a secret through QR image decoding might be the only option, if the secret is not provided in plaintext.
+In this case, the user has to press the QR button, which opens up the default file navigator application, and lets the user choose a file with the extension \t{.bmp}, \t{.jpg}, \t{.jpeg}, \t{.png} or \t{.gif}.
+This image is parsed, and an error is shown if the parsing was unsuccessful.
+A successful decoding gives a URI which contains the secret and the name as well (see: Section \ref{lab:ch4-totp}), so the user has nothing else to do.
+The extracted name and secret are subject to the same validations as the manually added ones.
+
+One added secret appears after the (somewhat) static ``header'' as an entry, a new row.
+If we get to multiple entries, the scrollbar appears, since the view gets longer than the screen.
+It resembles a mobile authenticator app.
+I even choose the aspect ratio to be somewhat similar to what a user would see on a mobile device.
+These entries are not ordered in any way, they are just added at the end of the list, to avoid jumping screens.
+If the user presses the remove button, the row is removed.
+Each row shows the name, the code, and the remaining time, in seconds.
+The remaining seconds are decremented each second.
+
+\begin{figure}[htbp]
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \includegraphics[width=1\linewidth]{img/totp-view.png}
+    \caption{TOTP view.}
+    \label{fig:totp-view}
+  \end{subfigure}
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \includegraphics[width=1\linewidth]{img/change-password-view.png}
+    \caption{Change password view.}
+    \label{fig:change-password-view}
+  \end{subfigure}
+  \caption{The change password view is embedded into the TOTP view.}
+\end{figure}
+
+The change password view is embedded inside the TOTP view (see: Figure \ref{fig:change-password-view}).
+This design choice comes from the desire to keeps things simple.
+If the change password button is clicked, the change password view's elements appear, and the button's text is changed to ``Cancel''.
+For a password change, the user has to provide the old password and the new password.
+The old password provided is verified against the password hash file, while the new password is subject to the same criteria as the password provided at registration (see: Section \ref{lab:ch4-password}).
+
+The revealing and hiding of the change password view does cause slight inconvenience in the sense that the TOTP entries/rows are pushed down when revealed and up when hidden.
+However, password changing is not a frequent operation, and always showing these elements would just take up screen surface.
+Another option would have been a dedicated view, but this would have brought larger overhead on the logic.
+Currently, there is no going back mechanism, the views just go in one flow, either login $\rightarrow$ TOTP or register $\rightarrow$ TOTP.
+Also, the actual solution has the advantage that TOTP codes are visible even when having the change password view shown.
+A popup could have been another option, but again, this is technically hard to pull off, since we talk about a web-based application, not a native desktop app where we simply call a function which launches another view.
+
+
+
+
+\subsubsection{Styling, CSS and other resources.}
+
+There is a single CSS file for the whole project, called \t{style.css}.
+A uniform styling is used for all elements: each button, label, and input looks the same way.
+I choose a color palette from the website Color Hunt\footnote{\url{https://colorhunt.co/palette/f4eeffdcd6f7a6b1e1424874}}, and I adapted the colors a little bit.
+As a result, four colors are used throughout \app{}, which have the color codes \t{\#fffcfc}, \t{\#c4bce0}, \t{\#8892c6} and \t{\#373c61}, which were defined as css constants \t{-{}-color-1}, \t{-{}-color-2}, \t{-{}-color-3} and \t{-{}-color-4}.
+The background is a linear gradient from \t{-{}-color-1} to \t{-{}-color-2}.
+For the text, the darkest color is used.
+The input and button borders are uniform as well, they use \t{-{}-color-3}.
+I wanted to avoid white/ light text on dark backgrounds, so the buttons have \t{-{}-color-2} as the background.
+The inputs have the brightest color as their background, which is almost white, but less eye-striking.
+
+I also added a bit of responsiveness to buttons.
+When  the user hovers over them, the border gets darker.
+The transition from the usual border color to the darker color happens over a period of time, not just instantly.
+When they are clicked, they become smaller for a split second, giving some feedback to the user that the button was indeed pushed.
+
+For the alignment of the elements, I used display flex on the \t{div}s.
+The body's CSS specifies the attributes \t{display: flex}, \t{flex-direction:column} and \t{min-height:100\%}.
+This way, the body occupies the whole available space, and from that point on, we think of the UI as stacking rows on each other.
+The most common row I used is specified as \t{.inline-form}, with attributes \t{display:flex} and \t{align-items: center}.
+For example, in \t{register.html}, a \t{div} with the previously mentioned class contains the new password label, new password input and new password button.
+In this case, and in most cases, I put the \t{stretch-input} class on the input, which defines \t{flex-grow: 1} and \t{width: auto;}, i.e., the input takes up all the remaining space the label and the button leaves for it.
+This works only if each \t{div} has the flex attribute, it does not implicitly cascade.
+
+The font I chose for the application is JetBrains Mono, an open-source font available at \url{https://fonts.google.com/specimen/JetBrains+Mono}.
+I put in the \t{res} folder the \t{.tff} files for regular, bold and italic, although currently I only used regular.
+This font looks nice, is monospaced, meaning that each character has the same length.
+A lot of monospaced fonts look ugly on a UI, they are more popular inside terminals and code editors, but I opted for one such font probably since I am a perfectionist.
+The JetBrains font looks friendly on a GUI as well, it is rounded and clearly visible.
+
+The application also has a logo, as seen on Figure \ref{fig:logo}.
+I made by hand in \t{drawio} and colored it in \t{MS Paint}.
+The colors of the application were reused.
+The logo depicts a USB stick with the text ``AUTH'' scratched on it.
+This image is also included as a \t{.ico} file in the project's \t{res} folder, used as the icon for the Windows pack.
+Unfortunately, on Linux, it was not so straight-forward to set the logo of the executable.
+Software usually uses a \t{.desktop} file to specify the image which should appear as the icon of the executable, but one such file contains absolute paths.
+Since we run the software from a USB stick, I cannot specify such a path.
+So, the Linux pack ships without an icon, but the icon is included in the resources, and the user, if he/ she has the necessary technical skills, can define a \t{.desktop} file using it.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.3\textwidth]{img/logo.png}
+    \caption{The logo of \app{}.}
+    \label{fig:logo}
+\end{figure}
+
+\subsubsection{The JavaScript giving it life.}
+
+As shown in the high-level diagram (see: Figure \ref{fig:high-level}), there is a dedicated package for the JavaScript files called \t{script}.
+Following the same principle as discussed in Section \ref{lab:ch4-html}, each view has a dedicated JS file: \t{registerScript.js}, \t{loginScript.js}, \t{totpScript.js}, and \t{changePasswordScipt.js}.
+Common/ reused functions can be found in \t{scriptUtils.js}.
+Each of these scripts is specified in \t{index.html}.
+I did not employ classes, they are all in the same namespace, so unique method names are required throughout all these files.
+
+In script utils, we can find the most frequently used method called \t{callApi}.
+This is a wrapper for calling an API function, as it will be presented in section \ref{lab:ch4-controller}.
+If the silent flag is set to False, this method will clear the previous message (displayed on \t{messageParagraph}), and display the error message with red, or in success scenario, the success message in green, if it exists.
+By using this wrapper all the time, I avoided code repetition and ensured that behavior is uniform for each API call.
+Script utils also contain the \t{loadView} function, which fetches the HTML from the path specified, adds event listeners for the fetched view, if necessary, and calls the \t{initTOTP} method of \t{totpScript} if the view is changed to the TOTP view.
+
+The \t{initTOTP} method calls the API to fetch all the data from storage and starts the TOTP timer.
+The timer is implemented using the stock method \t{setInterval}.
+It calls the \t{updateTimers} method each second, which:
+\begin{enumerate}
+  \item
+    Iterates through each entry.
+    For each of the entries then performs the next steps.
+  \item 
+    Gets the expiration milliseconds from the row's dataset (set previously).  
+    From the expiration milliseconds and the current date, calculates the remaining milliseconds.
+  \item
+    If the remaining milliseconds is (less than or) equal to zero, promotes the next code to current code; after which calls the API for getting the next code.
+  \item   
+    Updates the label which shows the remaining milliseconds.
+\end{enumerate}
+
+This is how the main functionality of \app{} comes to life.
+The rest of the script files contain the necessary JavaScript to call APIs for handling user actions described in Section \ref{lab:ch4-views}.
+These mostly include button click handlers.
+One interesting fact is that even though the \t{fetch} method is universal, it behaved differently on Linux and Windows.
+On Linux, if successful, it returned \t{response.ok=false} and \t{response.status=0}.
+On Windows, if successful, it returned \t{response.ok=true} and \t{response.status=200}.
+This is probably because on Linux the \t{file://} protocol was picked, while on Windows it seems like HTTP was the automatic choice.
+
 
 \subsection{Controller} \label{lab:ch4-controller}
 
+The controller package is responsible for the communication between the view and the model.
+It takes requests from the view and delegates to the logic of the model package.
+These are compact Python classes, but they are especially important.
+Model classes on their own are just isolated blocks of business logic, and the view is just asking information through the API without the knowledge of the existence or structure of model.
+The controllers are what tie \app{} together.
 
+The entry point of everything is the \t{MasterController}.
+This is why, on Figure \ref{fig:high-level}, every communication path from package script goes directly to it.
+The master controller is passed as the \t{js\_api} parameter of pywebview's \t{create\_window} method.
+This makes it so that JavaScript can call methods of \t{MasterController}.
+Then, following the same pattern as for HTML and JS files, each view has its own controller: \t{RegisterController}, \t{LoginController}, \t{TOTPController}, and \t{ChangePasswordController}.
+These are defined as fields of \t{MasterController}, this way JS can call them as shown in Table \ref{tab:api}.
 
+\begin{table}[htbp]
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Call in JavaScript}                      & \textbf{Method in Python}           \\ \hline
+window.pywebview.api.function()                  & MasterController.function()         \\ \hline
+window.pywebview.api.register.function()         & RegisterController.function()       \\ \hline
+window.pywebview.api.login.function()            & LoginController.function()          \\ \hline
+window.pywebview.api.totp.function()             & TOTPController.function()           \\ \hline
+window.pywebview.api.change\_password.function() & ChangePasswordController.function() \\ \hline
+\end{tabular}
+\caption{How API calls map to controller functions.}
+\label{tab:api}
+\end{table}
+
+The fact that the fields of \t{MasterContoller} were automatically picked up by \t{pywebview} is really convenient, but it also came with a surprise.
+When testing on Windows, the app crashed unexpectedly.
+This was because the \t{MasterController} class has a field \t{window}, which holds reference to the return value of \t{create\_window}, i.e., the window of the application.
+Since it is a field, pywebview tried to serialize it to make it available for JS to call.
+For some reason, this was not a problem on Linux, but it was a problem on Windows.
+The solution was to prepend the name of the class field with a dunder (\t{window} $rightarrow$ \t{\_window}).
+This is a common convention in Python to mark private fields; pywebview than knows that I do not wish to expose to JS this field.
+
+\subsubsection{Communication: an example and the conventions.}
+
+The easiest way of grasping how end-to-end communication works is to go through an example.
+In the following, I present you a full cycle of what happens when the user clicks Enter on the register view (see: Figure \ref{fig:register-view}).
+The flow is somewhat simplified, in code other things happen as well, but for the sake of showing a communication example, I included only the steps relevant for this purpose.
+
+\begin{enumerate}
+  \item The user clicks \t{newPasswordButton} (of \t{register.html}).
+  \item The click of \t{newPasswordButton} triggers the call of function \t{newPasswordHandler} (of \t{registerScript.js}).
+  \item \t{newPasswordHandler}, through function \t{callApi} (of \t{ScriptUtils.js}), calls \t{window.pywebview.api.register.new\_password\_handler}.
+  \item Function \t{new\_password\_handler} (of \t{register\_controller.py}) picks up the API call.
+  \item \t{new\_password\_handler} calls function \t{set\_password} (of \t{password.py}).
+  \item \t{set\_password} sets the password. Returns \t{True} on success, \t{False} on failure.
+  \item Based on the response from \t{set\_password}, \t{new\_password\_handler} returns a \t{Response} object of \t{SuccessType} on success, \t{ErrorType} on failure.
+  \item \t{newPasswordHandler}, through \t{callApi}, receives the \t{Response} object and shows to the user the success message on success, the error message on failure.
+\end{enumerate}
+
+First, you can see that there is a certain naming convention used, which helps a lot in finding related methods.
+The element, the JS handler, and the Python handler all use the same name, but with different suffixes and conventions.
+The HTML element contains its type (button, label, input).
+The JS handler follows the camelCase convention of JS, and adds the suffix ``handler''.
+The Python handler had the same name as the JS handler, but following the underscore naming convention of Python.
+
+Then, there are the data type conventions.
+The classes of model do not follow a strict guideline: some of them return \t{True}/ \t{False} on success/ error, some of them return \t{None} of failure, and some of them needed no error handling, so they had no failure scenario.
+It all depends on the purpose of the function and the context.
+However, the communication between the view and the controller follows a strict pattern.
+Each Python handler shall return \t{ResponseType}, defined in \t{response.py} as \t {SuccessType | ErrorType}.
+\t{SuccessType} is a dict which has status attribute equal to \t{STATUS\_SUCCESS}, a success message, and optionally a data field, used to send the return value of the model classes if it's the case.
+\t{ErrorType} has status \t{STATUS\_ERROR}, and an error message.
+The two constants, \t{STATUS\_SUCCESS} and \t{STATUS\_ERROR}, are shared with the frontend at startup.
+Hence, when JS handlers receive a response from the Python handlers, they can deduce if a response is of success or error, and can further extract fields based on this information.
 
 
 \section{Development} \label{lab:ch4-development}
