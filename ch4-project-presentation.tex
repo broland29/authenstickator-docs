@@ -954,11 +954,11 @@ The application is run as a module (with the \t{-m} flag).
 It is important to have every import start from the \t{src} folder.
 Even if relative imports work in PyCharm (due to hacks PyCharm does in the background), not following this convention will have nasty side effects: running from the CLI with the usual command will simply not work.
 The same convention has to be kept in tests also, since I hit unwanted side effects due to importing files differently in tests than in source code.
-Make sure to set \t{authenstickator} as a Source Root (see: \footnote{\url{https://stackoverflow.com/questions/52949551/is-there-any-way-to-force-pycharm-to-always-use-absolute-imports}}).
+Make sure to set \t{authenstickator} as a Source Root\footnote{\url{https://stackoverflow.com/questions/52949551/is-there-any-way-to-force-pycharm-to-always-use-absolute-imports}}.
 
 
 
-\subsection{Setup and Packing}
+\subsection{Development and Setup on Linux} \label{lab:ch4-linux}
 \app{} is meant to run on a USB Stick, on machines which possibly do not even have Python.
 One such release candidate is made with the help of PyInstaller.
 ``PyInstaller bundles a Python application and all its dependencies into a single package.
@@ -975,7 +975,7 @@ The icon is available in the source code as \t{logo.png}.
 For Windows, a \t{.ico} file is required, which can be specified as an argument for the PyInstaller, and will be embedded inside the \t{exe} file.
 
 
-\subsection{Setup on Linux}\label{lab:ch4-setup-on-linux}
+\subsubsection{Setup}\label{lab:ch4-setup-on-linux}
 
 The following setup was tested on Ubuntu 22.04 LTS.
 It might work on other Debian-based systems as well, but there is no guarantee.
@@ -1021,13 +1021,14 @@ python -m pytest
 
 
 
-\subsection{Provisioning the TPM on Linux} \label{lab:ch4-provisioning-the-tpm-on-linux}
+\subsubsection{Provisioning the TPM} \label{lab:ch4-provisioning-the-tpm-on-linux}
 
 If you want to use \app{} with the TPM feature enabled, you need to provision the TPM.
 If not, you can skip this section.
 
-\subsubsection{Real TPM}
-Check if you actually have a TPM chip.
+\paragraph{Real TPM}
+Follow the following steps if you wish to run \app{} with a real, physical TPM.
+First, check if you actually have a TPM chip.
 \begin{lstlisting}[language=bash, label={lst:tpm-check}, caption={Check if you have a TPM.}]
 sudo dmesg | grep -i tpm
 ls -l /dev/tpm0 /dev/tpmrm0
@@ -1109,7 +1110,7 @@ After the script's modifications, it might look like on Listing \ref{lst:default
 }
 \end{lstlisting}
 
-\subsubsection{Virtual TPM}
+\paragraph{Virtual TPM}
 
 To run with a virtual TPM, change the configs to enable it (see: Section \ref{lab:ch4-config}).
 It should work out of the box.
@@ -1130,7 +1131,7 @@ Then, you can re-launch the app, or run the commands from \t{linux\_tpm.py} manu
 
 
 
-\subsection{Packing on Linux}
+\subsubsection{Packing} \label{lab:ch4-packing-linux}
 
 To pack \app{}, after a successful setup (see: Section \ref{lab:ch4-setup-on-linux}), run the Linux packing script, as in Listing \ref{lst:packing-linux}.
 If you ran it previously, it will prompt you if you want to overwrite existing data, and you need to press Y.
@@ -1153,9 +1154,30 @@ tar -czvf Authenstickator-v1.0.0-Ubuntu-22.04.5-LTS.tar.gz Authenstickator/
 tar -xzvf Authenstickator-v1.0.0-Ubuntu-22.04.5-LTS.tar.gz
 \end{lstlisting}
 
+\subsubsection{Putting on an encrypted USB}
+
+To run \app{} from an encrypted USB stick with a Linux host machine, I recommend formatting with \t{Ext4} and encryption with LUKS (see: Section \ref{lab:ch3-luks}).
+Your OS probably supports this out of the box.
+On Figure \ref{fig:usb-linux}, you can see how such formatting looked like on Pop OS.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/usb-linux.png}
+    \caption{Encrypting the USB on Linux, with LUKS2.}
+    \label{fig:usb-linux}
+\end{figure}
+
+After having your USB ready, you shall put on it a version of \app{}.
+You can download a release packed by me from \url{https://github.com/broland29/authenstickator/releases}, or build and pack yourself as described in Section \ref{lab:ch4-packing-linux}.
+If you choose the first, download the desired \t{.tar.gz} and extract it either through your GUI or using the \t{tar} command (see: Listing \ref{lst:archive-linux}).
+If you have the \t{\_internal} folder and the \t{\app{}} executable, you are ready to go!
 
 
-\subsection{Setup on Windows} \label{lab:ch4-setup-on-windows}
+
+
+\subsection{Development and Setup on Windows} \label{lab:ch4-windows}
+
+\subsubsection{Setup}
 
 The following setup was tested on Microsoft Windows Version 10.0.19045.6466.
 It might work on other Windows systems as well, but there is no guarantee.
@@ -1191,7 +1213,7 @@ python -m pytest
 
 
 
-\subsubsection{Packing on Windows}
+\subsubsection{Packing}
 
 To pack \app{}, after a successful setup (see: Section \ref{lab:ch4-setup-on-windows}), run the Windows packing script, as in Listing \ref{lst:packing-windows}.
 If you ran it previously, it will prompt you if you want to overwrite existing data, and you need to press Y.
@@ -1216,20 +1238,24 @@ tar -a -c -f Authenstickator-v1.0.0-Windows-10.zip Authenstickator
 tar -x -f Authenstickator-v1.0.0-Windows-10.zip
 \end{lstlisting}
 
-As the output says, the result is in your temporary folder, by default \t{C:\\Users\\YOURUSERNAME\\AppData\\Local\\Temp\\authenstickator\\dist}.
 
 
+\subsubsection{Putting on an encrypted USB}
+
+To run \app{} from an encrypted USB stick with a Windows host machine, I recommend formatting with \t{FAT32} and encryption with BitLocker.
+Your OS probably supports this out of the box.
+On Figure \ref{fig:usb-windows}, you can see how such formatting looked like on Windows 10.
 
 
-\section{User Manual}
+\begin{figure}[htbp]
+  \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/usb-windows.png}}
+  \caption{Encrypting the USB on Windows, with BitLocker.}
+  \label{fig:usb-windows}
+\end{figure}
 
-\subsection{USB Setup on Linux}
-
-\subsection{USB Setup on Windows}
-
-
-
-
-
-
-\subsection{App functionalities}
+After having your USB ready, you shall put on it a version of \app{}.
+You can download a release packed by me from \url{https://github.com/broland29/authenstickator/releases}, or build and pack yourself as described in Section \ref{lab:ch4-packing-windows}.
+If you choose the first, download the desired \t{.zip}.
+Make sure to unblock the ZIP (see: \url{https://singularlabs.com/tips/how-to-unblock-a-zip-file-on-windows-10/}).
+After unblocking, extract it either through your GUI or using the \t{tar} command (see: Listing \ref{lst:archive-windows}).
+If you have the \t{\_internal} folder and the \t{\app{}} executable, you are ready to go!
