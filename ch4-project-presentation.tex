@@ -585,7 +585,7 @@ The result can be used as a key for the AES algorithm.
 AES is a symmetric algorithm, so the same key is used for encryption and decryption.
 
 The libraries \t{Crypto.Cipher}, \t{Crypto.Hash} and \t{Crypto.Protocol.KDF} are used for \t{AES}, \t{SHA256} and \t{PBKDF2}, respectively.
-For the PBKDF2 algorithm, I used 600000 iterations, with SHA256, as specified by the OWASP Password Storage Cheat Sheet\footnote{\url{https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html\#pbkdf2}}.
+For the PBKDF2 algorithm, I used 600000 iterations, with SHA256, as specified by the OWASP Password Storage Cheat Sheet\cite{pbkdf2-600000-iterations}.
 This is a work factor, and having a high value means it is harder to brute-force, but slower for malign use as well (it is ``intentional slowness'').
 So instead of balancing between security and usability with random trial and error, I consider that following trusted guidelines is a better option.
 

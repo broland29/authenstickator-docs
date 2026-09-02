@@ -2,5 +2,51 @@
 
 The objective of this thesis is to present a framework for running TOTP-based authentication apps on USB sticks without breaking 2FA principles, and showcase a proof of concept implementation of the framework called \app{}.
 
-Many applications require you to enable two-factor authentication, and the most common option is to use an authenticator app.
-In some cases you might want to avoid using your phone for such purposes.
+\section{Why?}
+
+Many applications require you to enable two-factor authentication for a better protection of user accounts.
+The most widespread option is to use a mobile authenticator app, which gives TOTP codes.
+TOTP stands for Time-based One Time Password, which, in practice, usually means a six-digit code which expires in 30 seconds.
+The applications generating these are developed for mobile devices.
+
+In some cases, you might want to avoid using a mobile device for 2FA.
+This thesis presents a way to replace your personal mobile device with a USB stick.
+This approach might have several benefits over the usual phone-based approach and other alternatives:
+\begin{enumerate}
+    \item \b{It enforces clear boundaries}.
+        If you use your personal mobile device for work-related tasks, like TOTP authentication, you start to blur the line between personal belongings and technology used for work.
+        Contrary to that, a USB running \app{} has one sole purpose, the TOTP code generation.
+    \item \b{It is cheaper}.
+        The price of a USB stick is incomparable with the price of a mobile phone.
+        Also, it is way cheaper than dedicated hardware, like a YubiKey.
+    \item \b{It reuses old media}.
+        Almost everyone has an old USB stick lying around.
+        \app{} might give it a new purpose!
+        By reusing old technology you fight against technology obsolescence.        
+\end{enumerate}
+
+I hope I convinced you!
+Even if not, I assure you this project presents some ideas which will make you think.
+It breaks the perception that only a phone or specialized hardware could be used for 2FA.
+The framework could be applied on any removable media capable of running an executable.
+
+\section{How?}
+
+The answer to how do we achieve this objective is the framework which will be presented.
+My goal while designing it was to make it as generic as possible, decoupled of technicalities.
+I researched secure cryptographic algorithms, looked up current standards, and tried to put myself in an attacker's point of view.
+
+But of what use is a theorem which is not proven?
+With this in mind, I also developed \app{}, which implements the framework.
+Again, security was the number one priority, so I aimed for cryptographically secure libraries, and tried to keep everything simple.
+The app aims to be user-friendly, giving a similar feel to mobile apps.
+While \app{} version 1.0 is just a minimum viable product, it also means that it does not bring anything that is not necessary.
+
+\section{For Whom?}
+
+Mostly for people working desk jobs, having technical knowledge of some degree.
+Or cybersecurity enthusiasts who would like to try out something new.
+For anyone who resonates with the ``Why''.
+And also for developers: \app{} is open source, licensed with GNU General Public License v3.0.
+Anyone who wishes to build open source software upon it is welcome.
+It might give ideas for similar projects, or parts of it could be incorporated in other software, due to its modularity.
