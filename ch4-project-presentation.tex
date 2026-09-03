@@ -3,14 +3,15 @@
 
 \section{Proposed Framework} \label{lab:ch4-proposed-framework}
 
-The goal of this Masters' thesis is to provide a generic framework for a TOTP application on a USB stick, as well as an implementation for it.
-In this section, we will focus on the framework, i.e., the ideas and principles, rather than the technology used.
-The presented framework could work on other devices as well, it is a generic flow of actions meant to be abstract.
+The goal of this Masters' thesis is to provide a generic framework which allows a TOTP code generator application to run on a USB stick, as well as an implementation for the proposed framework.
+In this section, we will focus on the framework, i.e., the ideas and principles, rather than the technology used in implementation.
+The framework could work out on other devices as well, not just USB sticks.
+It is a generic flow of actions meant to be abstract.
 At the same time, the framework's main goal is security, so it has to take into account all kinds of attacks and countermeasures for them.
 With all that in mind, the framework focuses on minimizing the possibility of exploits, errors, deadlocks.
 
 Simply put, a TOTP application generates TOTP codes (numbers) based on TOTP secrets (Base32 codes).
-The application which requires TOTP (example: Gmail, Facebook, etc.) displays a QR code or an equivalent secret.
+The application which requires TOTP (example: Gmail, Facebook, etc.) displays a QR code and/or an equivalent secret.
 The user scans the QR code or introduces the secret manually into the TOTP application, which usually runs on a personal mobile device.
 From that point on, the TOTP application stores that secret in a way or other, and keeps generating TOTP codes.
 
@@ -23,12 +24,14 @@ This goal shall be achieved by fulfilling the following requirements:
         TOTP code generation is a standard algorithm and requires only the current time and the TOTP secret.
     \item
         \b{Store the secrets safely}.
-        TOTP secrets are sensitive information.
-        They shall be stored in a way which is secure and resistant to possible cyber-attacks.
+        The TOTP secret and the generated codes are sensitive information.
+        The secret shall be stored in a way which is secure and resistant to possible cyber-attacks.
+        The codes, although short-lived, should be handled with care.
     \item
         \b{Keep the 2FA aspect}:
         The framework treats the device on which the app runs as the possession factor of Two-Factor Authentication.
         Breaking this aspect would make the framework useless.
+        In practice, this means running the app only on the USB stick, without leaving traces on the host PC.
 \end{enumerate}
 
 Figure \ref{fig:flows} shows the two main flows of the proposed architecture.
@@ -38,14 +41,15 @@ The following sections will go in depth on each aspect.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{img/diagram-flows.png}
+    \includegraphics[width=0.9\textwidth]{img/diagram-flows.png}
     \caption{The two main flows of the proposed framework.}
     \label{fig:flows}
 \end{figure}
 
 \subsection{Disk Encryption} \label{lab:ch4-disk-encryption}
 
-The first line of defense is provided by the device on which the app resides: the USB itself shall be encrypted.
+The first line of defense is provided by the device on which the app resides.
+The USB user for running the implementation on shall be encrypted.
 I will refer to the password used for the USB's encryption/ decryption as the \b{disk encryption password}.
 Each operating system has specific USB formats and default disk encryption algorithms.
 For Linux, Ext4 partition type encrypted with LUKS2 can be used (see: Section \ref{lab:ch3-luks}).
@@ -59,7 +63,7 @@ Someone could steal the USB stick and copy its contents in less than a minute.
 If the malicious actor puts the USB stick back to where he/she found it, the user would not even know.
 The attacker could then brute-force breaking the USB without any time limitations.
 Or even worse, if the attacker gets to know the disk encryption password, he/she can break in without having our media, using the copy.
-Nevertheless, USB Encryption is a good first line of attack against not-so tech-savvy attackers.
+Nevertheless, USB Encryption is a good first line of defense, making the framework undoubtably more secure.
 
 
 \subsection{Storage Encryption} \label{lab:ch4-storage-encryption}
@@ -77,31 +81,35 @@ In such cases, if the storage would be plaintext, an attacker could quickly read
 
 Storage encryption is also a second layer of security on top of disk encryption.
 While both could be brute-forced, if separate passwords are used for disk and storage encryption, the time required to do so increases.
-While disk encryption algorithms might be more permissive regarding password complexity, and the framework has no control over it, the user password is required to be complex.
-It is kind of a zero-trust scenario, where even if the user does not properly encrypt the disk it uses the framework on, the secrets are not leaked.
+Disk encryption algorithms might be more permissive regarding password complexity, and the framework has no control over it.
+In contrast, the user password is required to be complex, and is required by the framework in a verifiable manner.
+Following a zero trust mentality, one has to take into account that the user could omit disk encryption, or configure disk-encryption wrong.
+Even if this happens, the secrets are not leaked, due to storage encryption.
 
 The user password is never stored.
 Instead, the hash of the user password is stored inside a file, in what I refer to as the \b{hashed user password file}.
 If the hashed user password file does not exist, the framework considers that no user password was provided beforehand.
 The user is prompted to enter a new password.
-This is the \b{register scenario}; although it is a one-user application, it is easier to refer to it with such standard naming.
+This is the \b{register scenario}.
+Although \app{} is a one-user application, it is easier to refer to it with such standard naming.
+
 If the hashed user password file exists at start, the framework considers that registering happened beforehand.
 The user shall provide the old password, which is verified against the existing hash.
+This is the \b{login scenario}.
 An incorrect password prevents the start of the flow, since the system has no knowledge about the password.
 Without it, storage cannot be decrypted and secrets cannot be retrieved.
 
 
-\subsection{Using TPM} \label{lab:ch4-using-tpm}
+\subsection{The Optional TPM} \label{lab:ch4-using-tpm}
 
 The read-write nature of a USB cannot be changed, and making a USB stick uncopiable is either impossible or out of scope.
 The encryption with the help of the user password suffers the same vulnerability as the USB encryption, it is just another layer, but breakable in the same fashion.
-Detecting if another TOTP Application is using the secret (for example, if the attacker stole the secret and introduced it into a TOTP application) is also out of scope.
 However, the time required for brute-forcing can be made even bigger with the help of the Trusted Platform Module (TPM, see: Section \ref{lab:ch3-tpm}).
 
 The framework proposes generating a random number with the TPM chip, further referred to as the \b{TPM secret}.
 Since it is generated with dedicated hardware, it can be trusted (pun intended) to be truly random.
 Its length shall be considerably large, for example, 16 bytes.
-The TPM secret can then be combined with the user password in a cryptographically correct/ safe way, to produce what I refer to as the \b{key} or \b{key to use in current session}.
+The TPM secret can then be combined with the user password in a cryptographically correct/ safe way, to produce what I refer to as the \b{key} or \b{key to use in current session}, as seen on Figure \ref{fig:flows}.
 This shall be used for encrypting and decrypting the storage instead of using the user password directly.
 
 One such combination method of the user password and the TPM secret is through the AES algorithm (see: Section \ref{lab:ch3-aes}).
@@ -113,20 +121,22 @@ The TPM secret has to be available on further sessions, since without it, the ke
 It shall be stored in the TPM's NVRAM.
 This is non-volatile memory, meaning that it will be present after reboot.
 When needed, the NVRAM is queried for the TPM secret.
-The TPM secret is not stored in any form (not even in a hashed version like the user password).
+The TPM secret is not stored in files, logs, or in any other form than the TPM's NVRAM.
 
 The main drawback of using TPM is the same as its main benefit: it ties the application to a specific machine.
 If the user uses one machine all the time, this is not an issue.
 If the user switches between multiple devices (which support USBs), he/she might consider not using TPM.
-Also, setting up TPM is troublesome and requires technical abilities.
+Also, setting up TPM is troublesome and requires advanced technical abilities.
 For these reasons, the framework marks TPM usage optional.
 If TPM functionalities are disabled, a hardcoded salt is used instead of a TPM secret.
+This means that, if disabled, the TPM layer does not bring its benefits, but it does not break the previous level of security.
 
 
 \section{Implementation} \label{lab:ch4-implementation}
 
 The implementation of the proposed framework presented in Section \ref{lab:ch4-proposed-framework} is the application called \app{}.
-To keep the code modular and maintainable, it follows the Model-View-Controller (MVC) architectural pattern, as depicted in Figure \ref{fig:high-level}.
+To keep the code modular and maintainable, it follows the Model-View-Controller (MVC) architectural pattern.
+Figure \ref{fig:high-level} presents the main files of the project and how they are organized in packages.
 The model consists of Python classes handling business logic and everything related, including storage.
 The view is made with HTML, CSS and vanilla JavaScript.
 The intermediaries between model and view lie in the controller package, which are Python classes as well.
@@ -138,15 +148,15 @@ The intermediaries between model and view lie in the controller package, which a
     \label{fig:high-level}
 \end{figure}
 
-\app{} uses the \t{pywebview} library to provide a desktop application GUI which is written in web technologies.
-I chose to write HTML and CSS instead of using native GUI elements for a more uniform and cross-compatible experience.
-I kept design simple, without going too heavy on JavaScript.
+\app{} uses the pywebview library to provide a desktop application GUI which is written in web technologies.
+I chose to write HTML and CSS instead of using native GUI elements for a more uniform experience and for cross-compatibility.
+The design is simple, without going too heavy on JavaScript.
 There are no JS libraries or frameworks included, since that would have a huge impact on the project size and performance.
 Keep in mind that \app{} needs to run on a USB stick, so choosing lightweight solutions is a must.
 
 Each of the packages will be described in detail in the following.
 When thinking of flows, or when interpreting Figure \ref{fig:high-level}, keep in mind that everything is triggered by the actions of the user.
-Flow always starts from view, where JS triggered by either the user interacting with HTML elements or by periodic method calls/ timers.
+Flow always starts from view, where JS is triggered by either the user interacting with HTML elements or by periodic method calls/ timers.
 Then, the JS handler methods delegate to controller handler methods, which orchestrate the classes of model, calling business functionalities and tying them together.
 The model classes are kept as independent as possible, and they are unit tested.
 
@@ -161,12 +171,12 @@ This is even more true if we talk about cryptographic algorithms, like encryptio
 
 Second of all, Python provides an easy way to manage dependencies.
 When implementing \app{}, I also focused on making the developer experience easier.
-The setup of a project is always a big pain in the butt; Python's package manager (\t{pip}) makes it bearable.
+The setup of a project is always a big pain, but Python's package manager (\t{pip}) makes it bearable.
 All the libraries are downloaded inside a virtual environment (\t{venv}), so they are isolated and do not mess with the system's packages.
 The downloaded packages are then listed inside a \t{requirements.txt} file, so one can install all of them with a single command.
 
-While Python isn't famous about its OOP capabilities, I chose an object-oriented approach.
-For me and for most developers, it is simply a thing of habit to think of complex problems in terms of classes, objects, and interactions between objects.
+While Python isn't famous for its OOP capabilities, I chose an object-oriented approach.
+For me, and for most developers, it is simply a thing of habit to think of complex problems in terms of classes, objects, and interactions between objects.
 It provides structure and a common language.
 In \app{}, (almost) every Python file contains exactly one class, kind of like how Java enforces it.
 Interfaces are implemented using \t{ABC} and \t{abstractmethod} from the \t{abc} library.
@@ -174,7 +184,7 @@ The overridden methods are marked with the annotation \t{override} from the \t{t
 These mechanisms do not cause runtime errors, but generate warnings in the right IDE, making it easier to catch bugs.
 
 Similarly, the \t{typing} library is used for type hinting.
-Python is duck-typed, meaning that for Python, if something quacks, it is a duck.
+Python is duck-typed: if something quacks, Python considers it a duck.
 ``The Python runtime does not enforce function and variable type annotations.''\footnote{\url{https://docs.python.org/3/library/typing.html}}, but the \t{typing} library provides runtime support for type hints.
 The data type of method parameters and the return values of the methods can be specified. 
 Mismatches will generate warnings.
@@ -183,8 +193,7 @@ Type hints also document intent: it is easier to understand what the method trie
 The backend consists of several packages, which will be presented in the following sections.
 Each package is self-contained, i.e., independent of the other.
 As a result, they can be (and are) unit tested (see: Section \ref{ch5-theoretical-and-experimental-results}).
-As a secondary side-effect, this isolation made it so that for most classes it made sense to use the Singleton pattern.
-The singleton pattern ensures that there is just one instance of a given class at a time.
+
 
 
 \subsubsection{Singletons, singletons everywhere.} \label{lab:ch4-singleton}
@@ -197,20 +206,20 @@ In some cases, static methods would have been enough, but for uniformity, and si
 An example where singleton makes life easier than a pure static design: encryption.
 While \app{} never stores the user password and the salt on disk, they are kept as class fields of singleton \t{Encryptor}.
 Yes, this means the secret is stored in RAM, but so it is if it's just read for a split second.
-Having it as class fields, we do not need to re-prompt the user at each encryption operation, nor to query the TPM for the secret each time.
+By having them as class fields, we avoid re-prompting the user and querying the TOP at each encryption/ decryption operation.
 
 There are two types of singletons in \app{}.
-The classes with ``Manager'' in their name are simple singletons, for example, \t{LoggerManager}.
-It contains a \t{instance} field.
+The classes with \i{Manager} in their name are simple singletons, for example, \t{LoggerManager}.
+These contain an \t{instance} field.
 If the constructor is called and \t{instance} is not None, it is returned instead of running a new initialization.
-Else, \t{instance} is built up by filling its fields, running initialization logic and everything that happens in a constructor, as usual.
-The seconds type of singletons define a facade for multiple classes.
+Else, \t{instance} is built up by filling its fields, running initialization logic and everything that usually happens when constructors are called.
+The second type of singletons define a facade for multiple classes.
 For example, \t{TPM} is the TPM singleton: it has the usual singleton logic, but it also picks the right TPM class from a pool of multiple possibilities depending on the platform and the configs.
 Each option implements \t{AbstractTPM}, which is the common interface.
 This pattern is used where flexibility is desired: we want a singleton, but we have options for the specific class.
 
 
-\subsubsection{Configurations and how \app{} is made parametrized.} \label{lab:ch4-config}
+\subsubsection{Configurations and how \app{} is parametrized.} \label{lab:ch4-config}
 
 \app{} has certain parameters which can be changed from a JSON file, without changing source code.
 The \t{config} package contains the \t{ConfigManager}, as well as one or two JSON files.
@@ -274,10 +283,10 @@ The meaning of each parameter is the following:
     Logs are written to console but also to a log file, for audit, troubleshooting, and for cases there a console is not available.
   \item \t{encryptor.type}:
     The encryptor to use.
-    As of v1, only \t{AES} is supported.
+    As of \t{v1.0}, only \t{AES} is supported.
   \item \t{hasher.type}:
     The hasher to use.
-    As of v1, only \t{ARGON2} is supported.
+    As of \t{v1.0}, only \t{ARGON2} is supported.
   \item \t{password.min\_length}:
     The minimum length required for user password, inclusive.
   \item \t{password.max\_length}:
@@ -288,6 +297,7 @@ The meaning of each parameter is the following:
     The path to the storage file.
   \item \t{pywebview.debug}:
     If set, pywebview's debug mode is enabled.
+    The debug mode automatically opens the dev console, and logs extra messages, helpful for development and/or debugging.
     Accepted options: \t{True}, \t{False}.
   \item \t{pywebview.width}:
     The width of the pywebview window.
@@ -295,14 +305,15 @@ The meaning of each parameter is the following:
     The height of the pywebview window.
   \item \t{tpm.enabled}:
     If set, TPM functionalities are enabled.
+    As of \t{v1.0}, this flag (and implicitly, all TPM related flags) only affects Linux runs, TPM functionalities on Windows are not implemented.
     Accepted options: \t{True}, \t{False}.
   \item \t{tpm.virtual.fapi\_profile}:
     Which FAPI profile to use for the virtual TPM.
     Will be passed to \t{fapi-config.json}, and used as file name for the FAPI profile file.
     Must be in sync with parameter \t{tpm.virtual.fapi\_profile\_url}.
   \item \t{tpm.virtual.fapi\_profile\_url}:
-    The URL from which the FAPI profile can be downloaded for the virtual TPM.
-    Must be in sync with parameter \t{tpm.virtual.fapi\_profile}.
+    The URL from where the FAPI profile can be downloaded for the virtual TPM.
+    Must be in sync with \t{tpm.virtual.fapi\_profile}.
   \item \t{tpm.virtual.enabled}:
     If set, the software TPM is used instead the real TPM chip.
     Setup will run based on other \t{tpm.virtual} parameters.
@@ -314,7 +325,7 @@ The meaning of each parameter is the following:
   \item \t{tpm.virtual.tpm\_ctrl\_port}:
     The control port to use for the virtual TPM.
   \item \t{tpm\_start\_wait\_s}:
-    The amount of seconds to wait before checking if the virtual TPM got successfully provisioned, after calling the provision function.
+    The amount of seconds to wait before checking if the virtual TPM got successfully provisioned after calling the provision function.
 \end{itemize}
 
 
@@ -326,15 +337,15 @@ As its name suggests, the logger manager provides a logger instance.
 It is the one and only way to print messages, the print statement and similar shall not be used.
 
 The standard \t{logging} library is used.
-The log level can be from config (see: Section \ref{lab:ch4-config}).
+The log level can be set from config (see: Section \ref{lab:ch4-config}).
 For simplicity, \app{} uses only four log levels.
 It is important to select the right log level each time, otherwise important logs might get cluttered or not printed with certain configs.
 From most severe to the least, these are:
 \begin{enumerate}
-    \item \b{Error}. For fatal issues, ones which break execution.
-    \item \b{Warning}. For issues which should not be ignored, but do not crash the app.
-    \item \b{Info}. For messages which are not issues, but things that might help in audit.
-    \item \b{Debug}. The most low-level messages. These are useful only for development.
+    \item \b{Error}: for fatal issues, ones which break execution.
+    \item \b{Warning}: for issues which should not be ignored, but do not crash the app.
+    \item \b{Info}: for messages which are not issues, but things that might help in audit.
+    \item \b{Debug}: the most low-level messages. These are useful only for development.
 \end{enumerate}
 
 While the logger is centralized, logging happens in two places: the console and the log file.
@@ -343,7 +354,7 @@ This is helpful for debugging and provides a possibility to audit previous actio
 
 The format of log lines is: date and time, severity level in a letter (E, W, I, D), the file and the line of the source, the logger, and the message itself.
 Some log lines are shown on Figure \ref{fig:log-example}.
-While there is only one logger instance, \t{pywebview}, the front-end library also logs its warnings and errors.
+While there is only one logger instance, pywebview, if in debug mode, also logs its warnings and errors.
 These are useful, so instead of throwing them out, they are ``propagated'' to \t{LoggerManager}'s instance.
 This is why the logger is also printed in the log line: it can be either \t{[root]} or \t{[pywebview]}.
 
@@ -361,34 +372,36 @@ Logging such information be the equivalent of a data leak.
 \subsubsection{Generating TOTP codes.} \label{lab:ch4-totp}
 
 Class \t{TOTPManager} is responsible for generating the TOTP codes, as well as other TOTP-related functionalities.
-The \t{pyotp} library was used, which is straight-forward and provided every functionality I needed.
+The \t{pyotp} library was used, which is straight-forward and provided every functionality needed.
 As a matter of fact, there are only two such functionalities: generating TOTP-related information and parsing TOTP URIs.
 
 By \b{TOTP-related information}, I mean the current six-digit code, the next six-digit code, when the current code expires, and when the next code expires, as well as the interval.
 The \b{interval} is the time for which one TOTP code is valid.
-It is usually set to 30 seconds, as recommended by the authors of the TOTP algorithm.\cite{totp}
+It is usually set to 30 seconds, as recommended by the authors of the TOTP algorithm\cite{totp}.
 However, \app{} does not assume it is 30 seconds all the time, instead it deduces it from the secret.
-Deducing the info from the secret is as simple as calling a constructor and then extracting its fields, although some mathematics had to be done.
+Deducing the info from the secret is as simple as calling a constructor and then extracting its fields, although some mathematics had to be done afterward.
 
 Counterintuitively, I do not send to the frontend the seconds remaining.
-This would be a huge overhead, just think about it: querying every second for every secret, just to get back the same redundant information roughly 58 times a minute.
+This would be a huge overhead.
+Just think about it: querying every second for every secret, just to get back the same redundant information roughly 58 times a minute.
 Instead of querying each second, I could just automatically send each second, but again, this is a lot of redundancy, and it does get hacky.
-Instead, what I chose to do, is to send the expiration times to frontend, and let the frontend calculate the remaining time.
-Some kind of loop/ repetitive check is needed anyway, and a frontend timer is probably the best solution.
-The frontend can then query for fresh information when the current code expires.
+Instead, I chose to send the expiration times to frontend, and let the frontend calculate the remaining time.
+Some kind of loop/ repetitive check is needed anyway, and a frontend timer proved to be an appropriate solution.
+The frontend can then query for fresh information about a secret when the respective code expires.
 
-But what happens, if the querying takes longer than expected?
-Or if the number of codes to query for is large, and they expire at the same time, causing an unexpected overhead?
-Actually, the latter is rather expected, as almost all apps use the default TOTP parameters, and hence their codes all expire at the same moment (I have not seen any counter-examples yet).
-Well, this is why I also send the next code.
+But what happens if the querying takes longer than expected?
+Or if we have many codes, and they expire at the same time, causing an unexpected overhead?
+Actually, the latter is rather expected, as almost all apps use the default TOTP parameters.
+If they do so, their codes all expire at the same moment.
+This is when sending the next code will make sense.
 It is trivial, and the TOTP algorithms allows us, to retrieve the next code.
-In fact, any code could be computed, since the code is a function of the current time.
+In fact, any code could be computed, since the code is a function of the TOTP secret and the current Unix time (see: Section \ref{lab:ch3-totp}).
 There are authenticator apps, like Proton Authenticator, which also show the next code.
-So, the frontend has the current code and also the next one: when the current code expires, it can instantly \b{promote} the next code, i.e., make it current.
-This results in a smooth transition.
+I ensure that the frontend has the current code and also the next one, and this way, when the current code expires, it can instantly \b{promote} the next code, i.e., make it current.
+This results in a smooth transition, and avoids waiting for response before updating the code and remaining time.
 
-\b{Parsing the TOTP URI} means extracting information from the URI which the apps usually show in QR form.
-Yes, those fancy QR codes are nothing more than just a ``link'', which usually/hopefully follows the Key Uri Format specified by Google\footnote{\url{https://github.com/google/google-authenticator/wiki/Key-Uri-Format}}.
+\b{Parsing the TOTP URI} means extracting information from the provisioning URI, which usually comes encoded as a QR image.
+Yes, those fancy QR codes are nothing more than just a ``link'', which (hopefully) follows the Key Uri Format specified by Google\footnote{\url{https://github.com/google/google-authenticator/wiki/Key-Uri-Format}}.
 In the \t{TestTOTP} test class you can see some examples of such URIs, as different platforms provided to me:
 
 \begin{enumerate}
@@ -399,9 +412,10 @@ In the \t{TestTOTP} test class you can see some examples of such URIs, as differ
 
 The first one comes from the test site \url{https://authenticationtest.com/totpChallenge/}, which I used a lot throughout development.
 It provides a hardcoded secret, both in plaintext and in QR form.
-The QR, when parsed, resulted the URI shown with number 1.
-Comparing it with the Key Uri Format examples, you can see that it contains the label \t{totp@authenticationtest.com}, and the secret \t{I65VU7K5ZQL7WB4E}.
-It does not contain the issuer, although it is ``STRONGLY RECOMMENDED'' by Google, it is not required, hence we cannot assume that we get it all the time.
+The QR, when parsed, gives the URI shown with number 1.
+Using Key Uri Format terminology, it contains the label \t{totp@authenticationtest.com}, and the secret \t{I65VU7K5ZQL7WB4E}.
+It does not contain the issuer.
+Although it is ``STRONGLY RECOMMENDED'' by Google, it is not required, hence we cannot assume that we get it all the time.
 The second URI comes from a dummy Google account I made.
 You can see that it used URL encoding\footnote{\url{https://www.calculator.net/url-encode-decode.html}}: \url{\%3A} $\rightarrow$ \t{:}, \url{\%40} $\rightarrow$ \t{@}.
 The label also contains the issuer.

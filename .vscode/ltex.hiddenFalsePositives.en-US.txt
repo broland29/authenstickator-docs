@@ -1,1 +1,2 @@
 {"rule":"REP_PASSIVE_VOICE","sentence":"^\\QIf this file does not exist, it is considered that no user password was provided beforehand, so the user is asked to enter a new password.\\E$"}
+{"rule":"IN_A_X_MANNER","sentence":"^\\QWhile disk encryption algorithms might be more permissive regarding password complexity, and the framework has no control over it, the user password is required to be complex, and is required by the framework in a verifiable manner.\\E$"}

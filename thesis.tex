@@ -37,12 +37,7 @@
 
 % yoinked from: https://tex.stackexchange.com/a/732867/301747
 \lstdefinelanguage{json}{
-    basicstyle=\footnotesize\ttfamily,
-    numbers=left,
-    numberstyle=\scriptsize,
     breaklines=true,
-    frame=lines,
-    backgroundcolor=\color{gray!10},
     showstringspaces=false,
     string=[db]{"},
     stringstyle=\color{green!50!black},
@@ -95,10 +90,10 @@
 \renewcommand{\b}[1]{\textbf{#1}}
 
 \lstset{
-    basicstyle=\ttfamily\small,       % Monospace font
-    backgroundcolor=\color{gray!10},  % Light grey background
+    basicstyle=\footnotesize\ttfamily,       % Monospace font
+    backgroundcolor=\color{gray!5},  % Light grey background
     frame=single,                     % Draws a box around the code
-    rulecolor=\color{black!30},       % Light grey border
+    rulecolor=\color{black!10},       % Light grey border
     breaklines=true,                  % Wraps long lines of code
     showstringspaces=false
 }
