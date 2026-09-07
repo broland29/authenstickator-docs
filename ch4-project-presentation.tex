@@ -401,7 +401,7 @@ I ensure that the frontend has the current code and also the next one, and this 
 This results in a smooth transition, and avoids waiting for response before updating the code and remaining time.
 
 \b{Parsing the TOTP URI} means extracting information from the provisioning URI, which usually comes encoded as a QR image.
-Yes, those fancy QR codes are nothing more than just a ``link'', which (hopefully) follows the Key Uri Format specified by Google\footnote{\url{https://github.com/google/google-authenticator/wiki/Key-Uri-Format}}.
+Yes, those fancy QR codes are nothing more than just a ``link'', which (hopefully) follows the Key Uri Format specified by Google\cite{key-uri-format}.
 In the \t{TestTOTP} test class you can see some examples of such URIs, as different platforms provided to me:
 
 \begin{enumerate}
@@ -430,22 +430,24 @@ The name is combined as \t{ISSUER:LABEL}, if both available, or just the label, 
 
 Every mobile authenticator app provides the possibility to scan the QR code provided by the app which requires MFA.
 But, a USB stick does not have a camera.
-Initially, the only way to enter a TOTP secret into \app's database was to enter the secret manually, enter a name manually, and press enter.
-But, what if the app only shows a QR, and does not give us the plaintext equivalent?
-In that case, we could use an online tool to decode the QR image, but this would mean that we blindly trust a random website with handling out sensitive information.
+Initially, the only way to enter a TOTP secret into \app's database was to enter the secret and the name manually.
+But, what if the app only shows a QR, and does not provide a plaintext equivalent?
+In that case, the user could use an online tool to decode the QR image.
+However, this is a questionable solution, since it involves blind trust in a random website which could easily retain/ forward the decoded string.
 
 As a solution, I integrated QR decoding functionality into \app{}.
 It requires an image of the QR code, so a snip has to be saved beforehand.
 \b{The user shall delete the screenshot after decoding it, or store it in a secure location.}
 Otherwise, the secret could be exposed.
-The app could delete the image after decoding, but it leaves it to the user; who am I to manipulate your files?
-It would kind of break the isolation idea of \app{}, according to which the territory of \app{} is only the USB stick.
+You may think, why isn't \app{} deleting the image after decoding?
+Well, that would break the philosophy of \app{}: it shall not manipulate storage outside the USB stick.
+Also, the user might not expect this behavior.
 
 The QR code image is decoded using the \t{zxingcpp} library.
 Initially, \t{pyzbar} was used, but it brought extra requirements for Windows packs, so I switched it to \t{zxingcpp}, which is newer and still maintained.
-With the \t{pillow} library I opened the image, and with the \t{zxingcpp.read\_barcodes(image)} call I got the decoded text.
+The image is opened with the \t{pillow} library, and the \t{zxingcpp.read\_barcodes(image)} call gives the decoded text.
 The text is a URI which is passed to TOTP for parsing (see: Section \ref{lab:ch4-totp}).
-If there are no QR codes found in the image, I return None.
+If there are no QR codes found in the image, I return \t{None}.
 If there are multiple QR codes, the first one is processed, and a warning is logged.
 
 
@@ -470,12 +472,12 @@ The password manager is also responsible for validating new passwords.
 If they satisfy complexity requirements, it is said that they are ``acceptable''.
 An acceptable password in \app{} has a length between a minimum and a maximum length specified by configs (see: Section \ref{lab:ch4-config}).
 But, since \app{} takes security seriously, if the minimum length parameter is set to less than 15, it is switched to 15.
-This is to follow the guidelines published by NIST SP 800-63B-4\footnote{\url{https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63B-4.pdf}}, Section 3.1.1, which says:
-``Verifiers and CSPs SHALL require passwords that are used as a single-factor authentication mechanism to be a minimum of 15 characters in length.''
+This is to follow the guidelines published by NIST SP 800-63B-4, Section 3.1.1, which says:
+``Verifiers and CSPs SHALL require passwords that are used as a single-factor authentication mechanism to be a minimum of 15 characters in length.''\cite{nist-password-length}
 
 There is no special character requirement and such craziness.
 We are well past the age where special characters provided any benefit.
-Nowadays, they are rather an obstacle, in defining long a memorable passphrase.
+Nowadays, they are rather an obstacle, in defining long and memorable passphrase.
 The same NIST article, in its Appendix called Strength of Passwords, doubles down on this idea, saying that:
 \begin{itemize}
   \item
@@ -489,12 +491,12 @@ The same NIST article, in its Appendix called Strength of Passwords, doubles dow
 
 The password manager uses the hasher (see: Section \ref{lab:ch4-hasher}) to hash the user password before saving it to the user password hash file, and to verify the correctness of a provided user password, by reading the hash and verifying against it.
 Setting a new password implicitly involves checking if the new password is acceptable.
-There is also a hard limit of 100 maximum characters for the password, but this is just a sanity check, to avoid crazy users causing an overflow.
+There is also a hard limit of 100 maximum characters for the password, but this is just a sanity check.
 
 
 \subsubsection{TPM and the generation of the TPM secret.} \label{lab:ch4-tpm}
 
-\app{} currently supports TPM functionalities only on Linux (see: Section \ref{lab:c6-further-improvements}).
+\app{} currently supports TPM functionalities only on Linux.
 Using the second singleton approach described in Section \ref{lab:ch4-singleton}, the \t{TPM} class chooses between \t{NoTPM}, \t{LinuxTPM} and \t{WinowsTPM}, where \t{WindowsTPM} contains identical implementation to \t{NoTPM}.
 If TPM functionalities are disabled from configs (see: Section \ref{lab:ch4-config}), \t{NoTPM} is chosen.
 Otherwise, the current platform dictates what to do.
@@ -527,7 +529,6 @@ When this layer is used, configurations are held in a file named \t{fapi-config.
 The default location is \t{/etc/tpm2-tss/fapi-config.json}, but it can be overwritten by setting the \t{TSS2\_FAPICONF} environment variable.
 This file is generated automatically when you install or compile the libraries for FAPI provisioning, and it looks as shown in Listing \ref{default-fapi-config}.
 \b{Provisioning} is an initialization step necessary to be performed before using FAPI.
-The TPM, FAPI and the related files and configs are not well documented, so most of what I write here are the results of trial and error.
 
 \begin{lstlisting}[language=json, label={default-fapi-config}, caption={The default FAPI configuration file, as on my system.}]
 {
@@ -546,13 +547,13 @@ The TPM, FAPI and the related files and configs are not well documented, so most
 
 Provisioning a real TPM might require authorization, or might have been done beforehand is there is other software using FAPI.
 This is a tedious task which might differ from hardware to hardware, includes many edge cases and possible error sources.
-I generated with the help of AI a setup script for provisioning, which worked on a fresh Ubuntu 22.04 installation, see Section \ref{lab:ch4-provisioning-the-tpm-on-linux}.
+I generated (with the help of AI) a setup script for provisioning, which worked on a fresh Ubuntu 22.04 installation, see Section \ref{lab:ch4-provisioning-the-tpm-on-linux}.
 You can try it, or do it manually, but note that a provisioned FAPI is a prerequisite if you select non-virtualized TPM from configs.
 
 For development, but strictly only for that, a virtual TPM is encouraged, which can be opted for through the configs.
 By using a virtual TPM, you won't get locked out of the real TPM if you repeatedly violate authorization.
 A virtual TPM can be wiped completely anytime, and a new instance can be started.
-For the virtualization of the TPM, the \t{swtpm} Linux library is used.
+For the virtualization of the TPM, the \t{swtpm} Linux library was used.
 The \t{LinuxTPM} class contains code for setup which should work out of the box, running each time if you selected virtualization.
 It creates a custom \t{fapi-config.json}, as seen in Listing \ref{virtual-fapi-config}.
 
@@ -569,23 +570,23 @@ It creates a custom \t{fapi-config.json}, as seen in Listing \ref{virtual-fapi-c
 }
 \end{lstlisting}
 
-You can note the slight differences: there is a port defined, and a different profile is used.
+You can note the slight differences between Listing \ref{default-fapi-config} and Listing \ref{virtual-fapi-config}: there is a port defined, and a different profile is used.
 The FAPI profile is downloaded from the internet, from the URL specified in the config file.
 The profile's version shall match the version of the installed native \t{tpm2-tss/libtss2-fapi}.
 This can be retrieved with the help of the command \t{apt policy libtss2-fapi1}.
 Note that this is different from the \t{tpm2-pytss} version shown in \t{requirements.txt}.
 
-If configuration, provisioning, and all the setup steps are done correctly and successfully, the actual usage of the TPM through FAPI reduces to just a few lines.
+If configuration, provisioning, and all the setup steps are done correctly and successfully, the actual usage of the TPM through FAPI happens through just a few lines of code.
 These high-level functions provide convenient wrappers for TPM functionalities.
 The random number (TPM secret) is generated with \t{fapi.get\_random(16)}, where 16 means the secret will be of 16 bytes length.
 This number is then saved to and later retrieved from the TPM's Non-Volatile Random Access Memory (NVRAM), using the \t{fapi.create\_nv}, \t{fapi.nv\_write} and \t{fapi.nv\_read}.
 For each method, I used the same path, which basically defined the slot of NVRAM used, but abstracted, without going to index and byte level.
 The existence of the TPM secret before generation is checked with \t{fapi.list("/")}, which gets a list of all FAPI object paths.
-If the result contains our path, it means the secret was generated.
+If the result contains the secret path, it means the secret was generated.
 
 The FAPI method \t{create\_nv} is called with the flag \t{exists\_ok=True}, and \t{provision} (for the virtual TPM) is called with flag \t{is\_provisioned\_ok=True}.
 Both of these, in the case of previous create/provisioning, write an error in the log files, but do not actually cause crash.
-This is because \t{tpm2-pytss} is a wrapper for the \t{tpm2-tss} library written in C, and this is the best the wrapper's authors could come up, I guess.
+This is because \t{tpm2-pytss} is a wrapper for the \t{tpm2-tss} library written in C, and probably the wrapper's authors could not combat logging.
 This is a beauty flaw of the logs, but they do not mean actual errors.
 
 
@@ -601,20 +602,20 @@ AES is a symmetric algorithm, so the same key is used for encryption and decrypt
 The libraries \t{Crypto.Cipher}, \t{Crypto.Hash} and \t{Crypto.Protocol.KDF} are used for \t{AES}, \t{SHA256} and \t{PBKDF2}, respectively.
 For the PBKDF2 algorithm, I used 600000 iterations, with SHA256, as specified by the OWASP Password Storage Cheat Sheet\cite{pbkdf2-600000-iterations}.
 This is a work factor, and having a high value means it is harder to brute-force, but slower for malign use as well (it is ``intentional slowness'').
-So instead of balancing between security and usability with random trial and error, I consider that following trusted guidelines is a better option.
+So instead of balancing between security and usability with random trial and error, I followed trusted guidelines.
 
 This AES library works with triplets of nonce, tag and ciphertext, i.e., the AES-EAX variant of the algorithm.
 In practice, this means that at each encryption I create a new cipher using \t{AES.new}.
 The ciphertext returned by the \t{AESEncryptor}'s \t{encrypt} method will then contain the nonce, concatenated with the tag and the actual ciphertext.
 At decryption, this triplet is split.
 A new cipher is created with the same key and the extracted nonce, and the tag is passed to \t{decrypt\_and\_verify} to ensure correctness.
-This approach avoids the common pitfall of using the same nonce twice, which often turns such algorithms ``from gold-standard to broken'' (see \footnote{\url{https://www.trustedcalcs.com/en-us/guides/dev-tools/aes-gcm-encryption}} for an article which describes AES-GCM, which is another variant but at high level api point of view works the same way).
+This approach avoids the common pitfall of using the same nonce twice, which often turns such algorithms ``from gold-standard to broken'' (see \cite{aes-gcm} for an article which describes AES-GCM, which is another variant but works similarly to AES-EAX).
 
 The \t{AESEncryptor} and its respective singleton class, \t{Encryptor}, went through multiple refactorings throughout development.
 The final version does not set the key in the \t{\_\_init\_\_} method, but has a dedicated \t{set\_key} method.
 This is because the user password can change: \app{} supports password reset.
 In such cases, we want to change the key, but we do not want to swap out the singleton instance.
-The \t{set\_key} solves this exact issue: the key (internal state) is changed, but the instance (the reference) remains the same, so the change is ``implicitly propagated'' throughout the code base.
+The \t{set\_key} method solves this exact issue: the key (internal state) is changed, but the instance (the reference) remains the same, so the change is ``implicitly propagated'' throughout the code base.
 
 
 \subsubsection{How the storage file is handled.}
@@ -651,7 +652,7 @@ And, let's be real, how many TOTP secrets can a user have at most?
 \subsection{View} \label{lab:ch4-view}
 
 The view module of the application was implemented in CSS, HTML and vanilla JavaScript.
-Although these are technologies usually associated with web applications, \app{} is completely offline.
+Although these technologies are usually associated with web applications, \app{} is completely offline.
 It uses the \t{pywebview} library to make this possible.
 ``pywebview is a lightweight BSD-licensed cross-platform wrapper around a webview component.
 pywebview allows to display HTML content in its own native GUI window.
@@ -662,8 +663,7 @@ I wanted to avoid choosing a niche technology, and I also wanted something light
 For the purpose of \app{}, standard elements were needed, mostly just inputs, labels, and buttons.
 The fact that I chose HTML and CSS for the view made it such that the code base is easy to understand, universal, so to say.
 JavaScript was needed to intercept user actions, but the view is not completely ``dumb''.
-For example, it calculates the remaining time until TOTP code expiration, since it is more efficient to do this on the front-end.
-It also periodically calls the backend for retrieving new TOTP codes.
+For example, it calculates the remaining time until TOTP code expiration, since it is more efficient to do this on the front-end, and periodically calls the backend for retrieving new TOTP codes.
 So, as long as there is a reason to have it there, and it does not handle sensitive information, logic is also put inside JavaScript methods.
 
 \subsubsection{How HTML files are structured.} \label{lab:ch4-html}
@@ -676,20 +676,21 @@ Initially, this div contains the text \t{Loading...}, but immediately after load
 The \t{index.html} file links the CSS file and the scripts (JavaScript files) inside its \t{head} block.
 It also displays the big ``\app{}'' text, which is permanent on each view.
 Inside a \t{script} block, there are two globals defined, \t{RESPONSE} and \t{VIEW\_PATH}, but more on this later.
-The most important point is that here lies an event listener which catches when the view is loaded (\t{pywebviewready} envent), after which the JS API is called, and execution gets under control.
-From this point on, depending on user actions, the views will be changed.
+The most important point is that this file contains an event listener, which catches when the view is loaded (\t{pywebviewready} envent).
+After that event, the JS API is called, and execution gets under control.
+From that point on, depending on user actions, the views will be changed.
 
 \subsubsection{The views and their elements.} \label{lab:ch4-views}
 
 The very first view a user will see is the register view (see: Figure \ref{fig:register-view}).
 \t{register.html} contains an input for a new password.
 Focus is automatically put inside this input, so the user can start typing instantly.
-There is an enter button, which is also clicked if the user is inside the input and presses the enter button.
+There is an \t{Enter} button, which is also clicked if the user is inside the input and presses the enter button.
 The maximum characters allowed inside the input is limited.
 
 If there was a password provided beforehand, the login view will appear instead of the register view (see: Figure \ref{fig:login-view}).
 This is almost identical in shape, but the labels and the intent differs.
-This time, if enter is pressed or the unlock button is pressed, the password is verified against the old password's hash.
+This time, if enter or the \t{Unlock} button is pressed, the password is verified against the old password's hash.
 If it does not match, an error message is displayed.
 Error messages appear with red color, while success messages appear with green.
 Both are displayed inside \t{messageParagraph}, a \t{p} element which shall be present on each view.
@@ -714,12 +715,12 @@ There is no wiping mechanism or anything, the next message simply overwrites the
 In case of success, both from the register and the login view we get to the TOTP view (see: Figure \ref{fig:totp-view}).
 This is the main view of the application, since this is where the actual functionalities reside.
 At the top, the user has the ability to enter a TOTP secret in two ways: either manually of through decoding a QR.
-To add manually, the user has to enter the TOTP secret into the secret field, and also give it a unique name in the name field, after which, the Add button shall be clicked.
+To add manually, the user has to enter the TOTP secret into the secret field, and also give it a unique name in the name field, after which, the \i{Add} button shall be clicked.
 If there is a secret which was added previously and has the same name as the one the user wants to add, an error message is shown.
 The secret is also checked to be valid (see: Section \ref{lab:ch4-totp}).
 
 Adding a secret through QR image decoding might be the only option, if the secret is not provided in plaintext.
-In this case, the user has to press the QR button, which opens up the default file navigator application, and lets the user choose a file with the extension \t{.bmp}, \t{.jpg}, \t{.jpeg}, \t{.png} or \t{.gif}.
+In this case, the user has to press the QR button, which opens up the default file navigator, and lets the user choose a file with the extension \t{.bmp}, \t{.jpg}, \t{.jpeg}, \t{.png} or \t{.gif}.
 This image is parsed, and an error is shown if the parsing was unsuccessful.
 A successful decoding gives a URI which contains the secret and the name as well (see: Section \ref{lab:ch4-totp}), so the user has nothing else to do.
 The extracted name and secret are subject to the same validations as the manually added ones.
@@ -732,6 +733,10 @@ These entries are not ordered in any way, they are just added at the end of the 
 If the user presses the remove button, the row is removed.
 Each row shows the name, the code, and the remaining time, in seconds.
 The remaining seconds are decremented each second.
+
+\enlargethispage{-\baselineskip}
+\enlargethispage{-\baselineskip}
+
 
 \begin{figure}[htbp]
   \begin{subfigure}{.5\textwidth}
@@ -748,6 +753,7 @@ The remaining seconds are decremented each second.
   \end{subfigure}
   \caption{The change password view is embedded into the TOTP view.}
 \end{figure}
+
 
 The change password view is embedded inside the TOTP view (see: Figure \ref{fig:change-password-view}).
 This design choice comes from the desire to keeps things simple.
@@ -770,7 +776,8 @@ A popup could have been another option, but again, this is technically hard to p
 There is a single CSS file for the whole project, called \t{style.css}.
 A uniform styling is used for all elements: each button, label, and input looks the same way.
 I choose a color palette from the website Color Hunt\footnote{\url{https://colorhunt.co/palette/f4eeffdcd6f7a6b1e1424874}}, and I adapted the colors a little bit.
-As a result, four colors are used throughout \app{}, which have the color codes \t{\#fffcfc}, \t{\#c4bce0}, \t{\#8892c6} and \t{\#373c61}, which were defined as css constants \t{-{}-color-1}, \t{-{}-color-2}, \t{-{}-color-3} and \t{-{}-color-4}.
+As a result, there are four colors used throughout \app{}, which have the color codes \t{\#fffcfc}, \t{\#c4bce0}, \t{\#8892c6} and \t{\#373c61}.
+They are defined as CSS constants \t{-{}-color-1}, \t{-{}-color-2}, \t{-{}-color-3} and \t{-{}-color-4}.
 The background is a linear gradient from \t{-{}-color-1} to \t{-{}-color-2}.
 For the text, the darkest color is used.
 The input and button borders are uniform as well, they use \t{-{}-color-3}.
@@ -782,19 +789,20 @@ When  the user hovers over them, the border gets darker.
 The transition from the usual border color to the darker color happens over a period of time, not just instantly.
 When they are clicked, they become smaller for a split second, giving some feedback to the user that the button was indeed pushed.
 
-For the alignment of the elements, I used display flex on the \t{div}s.
-The body's CSS specifies the attributes \t{display: flex}, \t{flex-direction:column} and \t{min-height:100\%}.
-This way, the body occupies the whole available space, and from that point on, we think of the UI as stacking rows on each other.
-The most common row I used is specified as \t{.inline-form}, with attributes \t{display:flex} and \t{align-items: center}.
+For the alignment of the elements, I used display flex on \t{div}s.
+The body's, through the \t{display:flex, flex-direction:column, min-height:100\%} CSS attributes, enables this.
+The body occupies the whole available space, and from that point on, we think of the UI as stacking rows on each other.
+The most common row I used is specified as \t{.inline-form}, with attributes \t{display:flex} and \t{align-items:center}.
 For example, in \t{register.html}, a \t{div} with the previously mentioned class contains the new password label, new password input and new password button.
-In this case, and in most cases, I put the \t{stretch-input} class on the input, which defines \t{flex-grow: 1} and \t{width: auto;}, i.e., the input takes up all the remaining space the label and the button leaves for it.
+In this case, and in most cases, I put the \t{stretch-input} class on the input, which defines \t{flex-grow:1} and \t{width:auto;}, i.e., the input takes up all the remaining space the label and the button leaves for it.
 This works only if each \t{div} has the flex attribute, it does not implicitly cascade.
 
 The font I chose for the application is JetBrains Mono, an open-source font available at \url{https://fonts.google.com/specimen/JetBrains+Mono}.
-I put in the \t{res} folder the \t{.tff} files for regular, bold and italic, although currently I only used regular.
-This font looks nice, is monospaced, meaning that each character has the same length.
-A lot of monospaced fonts look ugly on a UI, they are more popular inside terminals and code editors, but I opted for one such font probably since I am a perfectionist.
-The JetBrains font looks friendly on a GUI as well, it is rounded and clearly visible.
+I put in the \t{res} folder the \t{.tff} files for regular, bold and italic, although currently only the regular variant is used (there is no italic or bold text in \app{}).
+This font looks well, but most importantly, is monospaced, meaning that each character has the same length.
+I like the monospaced property since with it things align better.
+A lot of monospaced fonts look ugly on a UI, giving code editor/ terminal vibes, but this font looks fairly friendly.
+And most importantly, it is rounded and clearly understandable.
 
 The application also has a logo, as seen on Figure \ref{fig:logo}.
 I made by hand in \t{drawio} and colored it in \t{MS Paint}.
@@ -803,8 +811,9 @@ The logo depicts a USB stick with the text ``AUTH'' scratched on it.
 This image is also included as a \t{.ico} file in the project's \t{res} folder, used as the icon for the Windows pack.
 Unfortunately, on Linux, it was not so straight-forward to set the logo of the executable.
 Software usually uses a \t{.desktop} file to specify the image which should appear as the icon of the executable, but one such file contains absolute paths.
-Since we run the software from a USB stick, I cannot specify such a path.
-So, the Linux pack ships without an icon, but the icon is included in the resources, and the user, if he/ she has the necessary technical skills, can define a \t{.desktop} file using it.
+Since \app{} runs from a USB stick, specifying one such path statically is impossible.
+So, the Linux pack ships without an icon, but the icon is included in the resources.
+If the user has the will and the necessary technical skills, he/ she can define a \t{.desktop} file using it.
 
 \begin{figure}[htbp]
     \centering
@@ -823,7 +832,7 @@ I did not employ classes, they are all in the same namespace, so unique method n
 
 In script utils, we can find the most frequently used method called \t{callApi}.
 This is a wrapper for calling an API function, as it will be presented in section \ref{lab:ch4-controller}.
-If the silent flag is set to False, this method will clear the previous message (displayed on \t{messageParagraph}), and display the error message with red, or in success scenario, the success message in green, if it exists.
+If the silent flag is set to \t{False}, this method will clear the previous message (displayed on \t{messageParagraph}), and display the error message with red, or in success scenario, the success message in green (if it exists).
 By using this wrapper all the time, I avoided code repetition and ensured that behavior is uniform for each API call.
 Script utils also contain the \t{loadView} function, which fetches the HTML from the path specified, adds event listeners for the fetched view, if necessary, and calls the \t{initTOTP} method of \t{totpScript} if the view is changed to the TOTP view.
 
@@ -849,7 +858,7 @@ These mostly include button click handlers.
 One interesting fact is that even though the \t{fetch} method is universal, it behaved differently on Linux and Windows.
 On Linux, if successful, it returned \t{response.ok=false} and \t{response.status=0}.
 On Windows, if successful, it returned \t{response.ok=true} and \t{response.status=200}.
-This is probably because on Linux the \t{file://} protocol was picked, while on Windows it seems like HTTP was the automatic choice.
+This is probably because on Linux the \t{file://} protocol was picked, while on Windows it seems like \t{HTTP} was the automatic choice.
 
 
 \subsection{Controller} \label{lab:ch4-controller}
@@ -865,7 +874,7 @@ This is why, on Figure \ref{fig:high-level}, every communication path from packa
 The master controller is passed as the \t{js\_api} parameter of pywebview's \t{create\_window} method.
 This makes it so that JavaScript can call methods of \t{MasterController}.
 Then, following the same pattern as for HTML and JS files, each view has its own controller: \t{RegisterController}, \t{LoginController}, \t{TOTPController}, and \t{ChangePasswordController}.
-These are defined as fields of \t{MasterController}, this way JS can call them as shown in Table \ref{tab:api}.
+These are defined as fields of \t{MasterController}: JS can call them as shown in Table \ref{tab:api}.
 
 \begin{table}[htbp]
 \begin{tabular}{|l|l|}
@@ -885,14 +894,14 @@ The fact that the fields of \t{MasterContoller} were automatically picked up by 
 When testing on Windows, the app crashed unexpectedly.
 This was because the \t{MasterController} class has a field \t{window}, which holds reference to the return value of \t{create\_window}, i.e., the window of the application.
 Since it is a field, pywebview tried to serialize it to make it available for JS to call.
-For some reason, this was not a problem on Linux, but it was a problem on Windows.
-The solution was to prepend the name of the class field with a dunder (\t{window} $rightarrow$ \t{\_window}).
-This is a common convention in Python to mark private fields; pywebview than knows that I do not wish to expose to JS this field.
+For some reason, this was not a problem on Linux (and the development machine), but it was a problem on Windows (one of the testing VMs).
+The solution was to prepend the name of the class field with an underscore (\t{window} $rightarrow$ \t{\_window}).
+This is a common convention in Python to mark private fields; pywebview then knows that I do not wish to expose to JS this field, and ignores it.
 
-\subsubsection{Communication: an example and the conventions.}
+\subsubsection{Communication: an example, and the conventions.}
 
 The easiest way of grasping how end-to-end communication works is to go through an example.
-In the following, I present you a full cycle of what happens when the user clicks Enter on the register view (see: Figure \ref{fig:register-view}).
+In the following, I present you a full cycle of what happens when the user clicks \i{Enter} on the register view (see: Figure \ref{fig:register-view}).
 The flow is somewhat simplified, in code other things happen as well, but for the sake of showing a communication example, I included only the steps relevant for this purpose.
 
 \begin{enumerate}
@@ -910,10 +919,10 @@ First, you can see that there is a certain naming convention used, which helps a
 The element, the JS handler, and the Python handler all use the same name, but with different suffixes and conventions.
 The HTML element contains its type (button, label, input).
 The JS handler follows the camelCase convention of JS, and adds the suffix ``handler''.
-The Python handler had the same name as the JS handler, but following the underscore naming convention of Python.
+The Python handler has the same name as the JS handler, but following the underscore naming convention of Python.
 
 Then, there are the data type conventions.
-The classes of model do not follow a strict guideline: some of them return \t{True}/ \t{False} on success/ error, some of them return \t{None} of failure, and some of them needed no error handling, so they had no failure scenario.
+The classes of model do not follow a strict guideline: some of them return \t{True}/ \t{False} on success/ error, some of them return \t{None} on failure, and some of them do not need any king of failure handling.
 It all depends on the purpose of the function and the context.
 However, the communication between the view and the controller follows a strict pattern.
 Each Python handler shall return \t{ResponseType}, defined in \t{response.py} as \t {SuccessType | ErrorType}.
@@ -942,12 +951,12 @@ The starting point of the documentation was the template provided by the Technic
 
 
 
-\subsection{Dependency Management, Imports} \label{lab:ch4-dependency-management-imports}
+\subsection{General Considerations} \label{lab:ch4-general-considerations}
 
 For installing packages and keeping track of their versions, \t{pip} was used.
 Some packages installed through \t{pip} also have OS-related dependencies, which will be discussed in later sections.
 But, in principle, \t{pip} was the one and only source of packages.
-Then, a \t{requirements.txt} file was generated using pip freeze.
+Then, a \t{requirements.txt} file was generated using \t{pip freeze}.
 
 \begin{lstlisting}[language=bash, label={lst:pip-freeze}, caption={Generating the requirements file.}]
 pip freeze > requirements.txt
@@ -955,14 +964,14 @@ pip freeze > requirements.txt
 
 This file contains all the packages and their versions.
 Even though \app{} was developed with cross-platform portability in mind, some functionalities, like the usage of TPM, required platform-specific packages.
-These are also marked in the requirements file, like: \t{sys\_platform == "linux"}.
+These are marked in the requirements file with ``flags'' like: \t{sys\_platform == "linux"}, and ignored on other platforms.
 If, during development, new dependencies are added, or versions are updated, the command \ref{lst:pip-freeze} has to be run again.
 But, be careful with updating packages: while I tried bringing everything to the latest version, there are some packages which simply do not work with newer versions, like \t{PyGObject}.
 
 Dependencies are not installed directly on the whole system, but a virtual environment is used.
-A virtual environment (\t{venv}) is used to isolate Python packages used for \app{} from other Python packages on the system.
-This is standard dependency management, and ensures not just that \app{} works well, but that we don't break other apps.
-Each developer creates its own virtual environment and these are not pushed to git (specified in \t{.gitignore}).
+A virtual environment (\t{venv}) is used to isolate Python packages used by \app{} from other Python packages on the system.
+This is standard dependency management, and is required not only for ensuring that \app{} works well, but also to avoid breaking other apps.
+Each developer creates his/ her own virtual environment and these are not pushed to git (specified in \t{.gitignore}).
 
 The application is run as a module (with the \t{-m} flag).
 It is important to have every import start from the \t{src} folder.
@@ -970,36 +979,26 @@ Even if relative imports work in PyCharm (due to hacks PyCharm does in the backg
 The same convention has to be kept in tests also, since I hit unwanted side effects due to importing files differently in tests than in source code.
 Make sure to set \t{authenstickator} as a Source Root\footnote{\url{https://stackoverflow.com/questions/52949551/is-there-any-way-to-force-pycharm-to-always-use-absolute-imports}}.
 
-
-
-\subsection{Development and Setup on Linux} \label{lab:ch4-linux}
 \app{} is meant to run on a USB Stick, on machines which possibly do not even have Python.
 One such release candidate is made with the help of PyInstaller.
 ``PyInstaller bundles a Python application and all its dependencies into a single package.
 The user can run the packaged app without installing a Python interpreter or any modules. (\dots{})
-However, it is not a cross-compiler; to make a Windows app you run PyInstaller on Windows, and to make a Linux app you run it on Linux, etc.
-''\footnote{\cite{https://pyinstaller.org/en/stable/}}
+However, it is not a cross-compiler; to make a Windows app you run PyInstaller on Windows, and to make a Linux app you run it on Linux, etc.''\footnote{\url{https://pyinstaller.org/en/stable/}}
 
-Packing commands also differ on Linux and on Windows.
-For example, executables' icons are treated differently.
-For Linux, a lot of desktop environments (GNOME, KDE, Xfce) use \t{.desktop} files to tie the icon to the application launcher.
-Since these files need absolute paths, and the app is run on a USB stick, I simply gave up on giving an icon for the Linux version.
-Power users are welcome to create their own \t{.desktop} files.
-The icon is available in the source code as \t{logo.png}.
-For Windows, a \t{.ico} file is required, which can be specified as an argument for the PyInstaller, and will be embedded inside the \t{exe} file.
+The commands themselves differ on Linux and on Windows as well.
+Paths work differently: Linux uses /, Windows uses $\backslash$.
+Application icons are treated differently: Windows needs a \t{.ico} file, Linux has no such concept.
+So, there are different setups, commands for both OSes, although they have the same intent.
 
+
+
+\subsection{Development and Setup on Linux} \label{lab:ch4-linux}
 
 \subsubsection{Setup}\label{lab:ch4-setup-on-linux}
 
 The following setup was tested on Ubuntu 22.04 LTS.
 It might work on other Debian-based systems as well, but there is no guarantee.
 Development was done with Python 3.10.12, which came with the OS installation.
-
-Some Python dependencies from \t{requirements.txt} require specific Linux packages to work.
-These include: a build compiler, the TPM2 development headers and build tools, some FAPI requirements (TPM-related), and some \t{PyGObject} requirements (\t{pywebview}/ UI related).
-For development, to avoid TPM lockout, a software TPM, \t{swtpm} is recommended, which also needs installation.
-Be careful with the \t{apt install} command: if you accidentally leave spaces after the line-breaking backslashes, it won't work.
-After it finishes, the project is cloned, a virtual environment is created, and requirements are installed inside.
 
 \begin{lstlisting}[language=bash, label={lst:linux-setup}, caption={Setup commands for Linux.}]
 sudo apt-get update
@@ -1021,6 +1020,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 \end{lstlisting}
 
+Listing \ref{lst:linux-setup} installs some Linux packages which are dependencies for the Python packages listed in \t{requirements.txt}.
+These include: a build compiler, the TPM2 development headers and build tools, some FAPI requirements (TPM-related), and some \t{PyGObject} requirements (\t{pywebview}/ UI related).
+For development, to avoid TPM lockout, a software TPM, \t{swtpm} is recommended, which also needs installation.
+Be careful with the \t{apt install} command: if you accidentally leave spaces after the line-breaking backslashes, it won't work.
+After it finishes, the project is cloned, a virtual environment is created, and requirements are installed inside.
+
+
 
 Once the scripts from \ref{lst:linux-setup} all finished, you can start the app.
 Always activate the virtual environment before running.
@@ -1041,7 +1047,7 @@ If you want to use \app{} with the TPM feature enabled, you need to provision th
 If not, you can skip this section.
 
 \paragraph{Real TPM}
-Follow the following steps if you wish to run \app{} with a real, physical TPM.
+Follow these steps if you wish to run \app{} with a real, physical TPM.
 First, check if you actually have a TPM chip.
 \begin{lstlisting}[language=bash, label={lst:tpm-check}, caption={Check if you have a TPM.}]
 sudo dmesg | grep -i tpm
@@ -1098,7 +1104,7 @@ reboot
 \end{lstlisting}
 
 Also, if you get provisioning errors saying that TPM was already set up, you might want to try deleting previous keystores (see: Listing \ref{lst:wiping-keystores}).
-These affect only FAPI, not the whole TPM (I have disk encryption which uses TPM, but this command did not break it).
+These affect only FAPI, not the whole TPM (I have disk encryption which uses TPM, and this command did not break it).
 If other software on your PC uses FAPI, you might want to look for a more graceful solution.
 
 \begin{lstlisting}[language=bash, label={lst:wiping-keystores}, caption={Wiping previous keystores.}]
@@ -1137,11 +1143,10 @@ nc -zv localhost 2322
 \end{lstlisting}
 
 If \t{swtpm} locks you out and/or you want to start fresh, you can kill its process and delete its folder.
+Then, you can re-launch the app, or run the commands from \t{linux\_tpm.py} manually.
 \begin{lstlisting}[language=bash]
 pkill swtpm | rm -r /tmp/vtpm
 \end{lstlisting}
-
-Then, you can re-launch the app, or run the commands from \t{linux\_tpm.py} manually.
 
 
 
@@ -1151,6 +1156,9 @@ To pack \app{}, after a successful setup (see: Section \ref{lab:ch4-setup-on-lin
 If you ran it previously, it will prompt you if you want to overwrite existing data, and you need to press Y.
 The flags specified in \t{pack-linux.sh} add a name to the packed executable, add non-Python files which \t{pyinstaller} would not include by default, ensure paths start from root, and specify the output directory.
 Builds are generated in the temporary folder, so they will be wiped at reboot; you can change this if you wish.
+
+\enlargethispage{-\baselineskip}
+
 
 \begin{lstlisting}[language=bash, label={lst:packing-linux}, caption={Running the packing script for Linux.}]
 source venv/bin/activate
@@ -1191,7 +1199,7 @@ If you have the \t{\_internal} folder and the \t{\app{}} executable, you are rea
 
 \subsection{Development and Setup on Windows} \label{lab:ch4-windows}
 
-\subsubsection{Setup}
+\subsubsection{Setup} \label{lab:ch4-setup-on-windows}
 
 The following setup was tested on Microsoft Windows Version 10.0.19045.6466.
 It might work on other Windows systems as well, but there is no guarantee.
@@ -1201,7 +1209,7 @@ Instead, you can get 3.10.11 from \url{https://www.python.org/downloads/release/
 When running the installer, tick the option to add to path and to disable path length limit.
 You will also need Git, you can get it from \url{https://git-scm.com/install/windows}.
 After having Python and Git, run the commands from Listing \ref{lst:windows-setup}.
-Command \t{where python} shall output as first entry \t{$\backslash$venv$\backslash$Scripts$\backslash$python.exe}; if not, try activating again/ in a new terminal (it happened to me).
+Command \t{where python} shall output as first entry \t{$\backslash$venv$\backslash$Scripts$\backslash$python.exe}; if not, try activating again/ in a new terminal.
 
 \begin{lstlisting}[language=bash, label={lst:windows-setup}, caption={Setup commands for Windows.}]
 git clone https://github.com/broland29/authenstickator.git
@@ -1227,12 +1235,16 @@ python -m pytest
 
 
 
-\subsubsection{Packing}
+\subsubsection{Packing} \label{lab:ch4-packing-windows}
 
 To pack \app{}, after a successful setup (see: Section \ref{lab:ch4-setup-on-windows}), run the Windows packing script, as in Listing \ref{lst:packing-windows}.
 If you ran it previously, it will prompt you if you want to overwrite existing data, and you need to press Y.
 The flags specified in \t{pack-windows.bat} add a name and icon to the packed executable, add non-Python files which \t{pyinstaller} would not include by default, ensure paths start from root, disable the scary black terminal, and specify the output directory.
 Builds are generated in the temporary folder; you can change this if you wish.
+
+\enlargethispage{-\baselineskip}
+\enlargethispage{-\baselineskip}
+
 
 \begin{lstlisting}[language=bash, label={lst:packing-windows}, caption={Running the packing script for Windows.}]
 venv\Scripts\activate.bat
@@ -1241,7 +1253,7 @@ script\pack-windows.bat
 \end{lstlisting}
 
 
-If you want to create a release/archive, navigate to the previous command's output (by default \t{C:$\backslash$Users$\backslash$YOUR-USERNAME$\backslash$AppData$\backslash$Local$\backslash$Temp$\backslash$authenstickator$\backslash$dist}) and pack it using \t{tar}.
+If you want to create a release/archive, navigate to the previous command's output (\t{C:$\backslash$Users$\backslash$YOUR-USERNAME$\backslash$AppData$\backslash$Local$\backslash$Temp$\backslash$authenstickator$\backslash$dist} by default), and pack it using \t{tar}.
 See Listing \ref{lst:archive-linux} for an example of packing for an Ubuntu release, and later extracting.
 If you did this on a VM and want to get the archive to your host machine, on the VM, you can get your IP (\t{YOUR-VM-IP}) using \t{ipconfig}, then start a local HTTP server with Python using \t{python -m http.server 8000
 }.
@@ -1260,9 +1272,11 @@ To run \app{} from an encrypted USB stick with a Windows host machine, I recomme
 Your OS probably supports this out of the box.
 On Figure \ref{fig:usb-windows}, you can see how such formatting looked like on Windows 10.
 
+\enlargethispage{-\baselineskip}
+
 
 \begin{figure}[htbp]
-  \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/usb-windows.png}}
+  \makebox[\textwidth][c]{\includegraphics[width=1.3\textwidth]{img/usb-windows.png}}
   \caption{Encrypting the USB on Windows, with BitLocker.}
   \label{fig:usb-windows}
 \end{figure}
@@ -1272,4 +1286,5 @@ You can download a release packed by me from \url{https://github.com/broland29/a
 If you choose the first, download the desired \t{.zip}.
 Make sure to unblock the ZIP (see: \url{https://singularlabs.com/tips/how-to-unblock-a-zip-file-on-windows-10/}).
 After unblocking, extract it either through your GUI or using the \t{tar} command (see: Listing \ref{lst:archive-windows}).
+Otherwise, execution fails silently/ with an unrelated error message, because Windows.
 If you have the \t{\_internal} folder and the \t{\app{}} executable, you are ready to go!

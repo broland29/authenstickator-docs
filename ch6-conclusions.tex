@@ -1,17 +1,28 @@
 \chapter{Conclusions}
 
+The thesis presented a framework for running TOTP applications on USB sticks, without breaking the MFA aspect.
+The framework had security as number one priority: it considered different attack scenarios, and made them impossible/ hard to pull off.
+\app{}, a ready-to-use application developed both for Linux and Windows, proved that the framework can be put in practice.
+Both the framework and the implementation were documented.
+The design decisions were reasoned through bibliographic research.
+Digital security recommendations of trusted institutions were taken into account.
+The application was manually tested on virtual machines, and automatically tested with unit tests.
+The source code is publicly available on GitHub, at \url{https://github.com/broland29/authenstickator}.
 
+All in all, coming up with one such framework was fun in a way.
+I was really happy when I got the idea to make TOTP code generation on USB devices, and I saw that it has not been done before.
+But I won't pretend that it wasn't extremely hard: I had to change the ideas many times, rethink flows, start over.
+What looked like a great idea at first often got completely annihilated by one little flaw.
+In my opinion, this is why cybersecurity is hard: you have to be extremely cautious and think of virtually all scenarios\dots and the attacker has to find just one mistake.
 
-\section{Further improvements} \label{lab:c6-further-improvements}
+As further improvement, TPM support for Windows could be implemented.
+This was not done due to lack of time and lack of available documentation.
+Although TPM has been around for some time, the development experience with it feels like a burden: no clear documentation, no well-documented APIs, no examples to be found on the internet.
+The current Linux code is the result of lots of trial and error, not of a smooth development.
 
-\app{} does not support TPM operations on Windows.
-While I would have loved to make it work on Windows as well, it simply looks like TPM development is not meant to be done on Windows unless you are a TPM expert.
-The \t{tpm2-pytss} library does not support Windows\footnote{\url{https://github.com/tpm2-software/tpm2-pytss/issues/597\#issuecomment-2556916125}}, and there are no similar libraries for Windows.
-So writing equivalent FAPI code was not an option.
-The remaining solution was to go low level, calling the TPM 2.0 commands directly (\t{TPM2\_NV\_ReadPublic}, \t{TPM2\_GetRandom}, \t{TPM2\_NV\_DefineSpace}, \t{TPM2\_NV\_Write}, \t{TPM2\_NV\_Read}).
-The only way I found to call these was through the \t{Tbsip\_Submit\_Command} C API.\footnote{\url{https://learn.microsoft.com/en-us/windows/win32/api/tbs/nf-tbs-tbsip_submit_command}}
-This API expects you to build the commands byte by byte.
-I found no examples online of how to use it.
-AI sketched me an example of how the code working on Linux would look like with calls to this API, and it gave me more than 200 lines of byte-manipulating code.
-Unfortunately, my current TPM knowledge is not deep enough to write and document such code, nor do I wish to write such low-level code for something that should be a few lines, but isn't, since Windows.
-I also had the idea to use WSL, but it looks like WSL has no access to the physical TPM.
+\app{} breaks the misconception that authenticator apps need a mobile device or specialized hardware.
+It shows that cybersecurity concepts can still be mixed to come up with new security solutions.
+You can still opt for open source products, or develop your own, if you lose trust in closed source mainstream applications.
+If I could do it, you can too!
+
+I would like to thank all the care, patience, and food I got from my fiancée during the of writing this thesis, for my friends and family for the continuous support, for my supervisor for giving feedback and guidance, and last but not least, for God giving me the willpower to finish this thesis.

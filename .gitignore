@@ -1,5 +1,5 @@
 build/*
 !build/thesis.pdf
 
-# contains PII
-declaratie.tex
+# contains PII and/or not relevant as documentation
+ignore/*

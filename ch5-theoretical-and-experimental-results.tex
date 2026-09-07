@@ -1,30 +1,112 @@
-
 \chapter{Theoretical and Experimental Results} \label{ch5-theoretical-and-experimental-results}
 
-\section{Unit Testing}
+\section{The Framework}
 
-\section{Manual Testing}
+The thesis proposes a framework for running TOTP-generating applications securely on USB devices (see: Section \ref{lab:ch4-proposed-framework}).
+This framework is complete, considers different attack scenarios (like ``coffee-shop'' attacks) and protections against them (like storage encryption).
+It makes use of TPM functionalities to make brute-forcing unfeasible.
+It is flexible, since the user can opt out of TPM usage for technical or usability reasons, yet the rest of the framework keeps working as with a TPM.
+Furthermore, it is generic, does not go into technical details, so algorithms can be interchanged, ideas can be reinterpreted, and gives freedom to whom would like to implement it. 
 
-\section{Testing on Linux VM}
-
-Since the most popular distro is Ubuntu\footnote{2025 Stack Overflow Developer Survey: \url{https://survey.stackoverflow.co/2025/technology}}, I chose to test and build on a Ubuntu 22.04 LTS machine. Ubuntu 20.04 LTS hit its Standard Security
-Maintenance deadline at May 2025, while 22.04 LTS is still in free support until May 2027. Distros shall be backward compatible, so the results shall be the same for newer Ubuntu releases as well, and the setup will probably work on Debian and other Debian-based distros as well.
-
-
-
-If you wish to test the application with the real TPM setting, but still want to avoid using your own TPM and getting locked out, you can use a Virtual Machine.
-My recommendation is QEMU/KVM, since it is easy to set up and works well.
-The following steps for TPM setup are for QEMU/KVM 4.0.0.
-Turn of the virtual machine if it is currently running.
-Inside the ``Show virtual hardware details'' panel (the icon containing the letter I, when the VM is selected), click ``Add Hardware''.
-Select TPM.
-Inside ``Advanced options'', select Model ``CRB'' and Version ``2.0''.
-Click finish, and start the VM.
+Nothing proves theory more than putting it into practice.
+The framework's proof of concept is the application called \app{}.
+The fact that \app{} was deliverable shows that the framework does not impose impossible ideas.
 
 
-\section{Testing on Windows VM}
 
-For unit tests, the \t{pytest} library was used. To run all tests, with the virtual environment activated, run the following command:
-\begin{lstlisting}[language=bash]
-python -m pytest
-\end{lstlisting}
+\section{The Implementation}
+
+\app{} version 1.0.0 is publicly available on GitHub, under GPL-3.0 license, at \url{https://github.com/broland29/authenstickator/releases}.
+This application is fully functional.
+It implements every aspect of the proposed framework.
+It has everything needed for a TOTP generator application, and nothing more.
+
+
+
+\subsection{Automated Testing}
+
+As every well-maintained software, \app{} ships with unit tests.
+These are written in \t{pytest}, found under the \t{tests} folder.
+Unit tests are written for the classes of \t{model}.
+In other words, business logic is tested in isolation.
+This enables developers to quickly ensure they did not break existing functionality covered by tests.
+
+There are 21 tests in total, which cover:
+\begin{enumerate}
+    \item \b{Encryption tests}: encrypting and decrypting gives back the original message.
+    \item \b{Hasher tests}: making a hash and then validating it against the same input succeeds.
+    \item \b{QR tests}: decoding QR images works, invalid image is handled well, bad image path is handled well.
+    \item \b{Storage tests}: persistence works, deletion works, duplicate name is handled well, retrieval of non-existent secret is handled well.
+    \item \b{TOTP tests:} code generation works, URI parsing works.
+    \item \b{TPM tests:} secret initialization and retrieval works with no-TPM and software-TPM configurations.
+\end{enumerate}
+
+QR images for testing were retrieved from three sources: \url{https://authenticationtest.com/totpChallenge/}, which is a website designed specifically for TOTP software testing; a dummy Google account; and a dummy Microsoft account.
+URI parsing is then tested from the strings decoded from these.
+TOTP code generation correctness is tested through the previously mentioned test site's API.
+By making a GET request to \url{https://authenticationtest.com/totp/?secret=I65VU7K5ZQL7WB4E}, the website returns what the current code is; this is checked against what \app{}'s TOTP class generates given the same secret (\t{I65VU7K5ZQL7WB4E}).
+TPM functionalities are not tested with a real TPM to avoid DA lockouts.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/pytest.jpeg}
+    \caption{The green developers love to see.}
+    \label{fig:pytest}
+\end{figure}
+
+
+
+\subsection{Manual Testing}
+
+Manual testing was performed on the development machine while writing the code, but most importantly on virtual machines, to avoid ``it works on my machine'' type of problems. 
+Since the most popular Linux distro is Ubuntu\footnote{\url{https://survey.stackoverflow.co/2025/technology}}, the main test VM had Ubuntu 22.04 LTS.
+I used QEMU/KVM as virtualization software, which seemed like an impeccable choice: it supports both connecting a USB device from the host PC to the VM and simulating a TPM (see: Figure \ref{fig:qemu-usb-tpm}).
+Unlike TPM simulation with a software TPM, TPM simulation through a VM is almost identical to a real TM.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/qemu-usb-tpm.png}
+    \caption{Adding hardware to the VM used for testing.}
+    \label{fig:qemu-usb-tpm}
+\end{figure}
+
+On Figure \ref{fig:app-on-ubuntu-22}, you can see \app{} running inside an Ubuntu 22.04 LTS VM.
+I started from a fresh installation snapshot.
+Then, I downloaded the corresponding release from \url{https://github.com/broland29/authenstickator/releases/tag/v1.0.2}.
+By default, TPM is disabled, so I enabled it from the config files.
+Then, I shut down the VM, attached a TPM, and started it again.
+I ran the FAPI setup script, available at \url{https://github.com/broland29/authenstickator/blob/main/script/setup_fapi.sh}.
+I copied the three QR images and decoded them with the app.
+You can see that the TOTP codes generated are identical to the ones generated by Proton Authenticator.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/app-on-ubuntu-22.jpg}
+    \caption{The app running inside the Ubuntu 22 VM, with real TPM enabled.}
+    \label{fig:app-on-ubuntu-22}
+\end{figure}
+
+For Windows, I decided on Windows 10 Professional edition (10.0.19045.6466).
+I created the USB stick on my girlfriend's laptop, and added a secret (\t{aa}) there.
+Then I plugged it in the VM and added another secret (\t{bb}).
+Neither of the machines have Python installed.
+The codes are generated correctly, see Figure \ref{fig:app-on-windows}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/app-on-windows.jpeg}
+    \caption{The app running inside the Windows 10 VM.}
+    \label{fig:app-on-windows}
+\end{figure}
+
+
+Finally, I also packed on Ubuntu 24.04 LTS.
+I did not test thoroughly on this VM, it was mostly to see if packing commands and the app runs on other Ubuntu version as well.
+And the answer is they do, see Figure \ref{fig:app-on-ubuntu-24}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/app-on-ubuntu-24.jpeg}
+    \caption{The app running inside the Ubuntu 24 VM.}
+    \label{fig:app-on-ubuntu-24}
+\end{figure}
