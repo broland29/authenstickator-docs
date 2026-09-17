@@ -1,0 +1,117 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="MRvj2MJStwMV9uvdyyl-">
+    <mxGraphModel dx="1745" dy="875" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-90" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=1 4;" value="" vertex="1">
+          <mxGeometry height="506" width="320" x="-560" y="254" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-87" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=1 4;" value="" vertex="1">
+          <mxGeometry height="506" width="240" x="-800" y="254" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-54" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-45">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Ask the user&lt;div&gt;for a&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;new key.&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="-760" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-60" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-59">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Ask the user for the old&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;key.&lt;/span&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="-440" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-88" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-65">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-620" y="650" />
+              <mxPoint x="-720" y="650" />
+              <mxPoint x="-720" y="780" />
+              <mxPoint x="-560" y="780" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-35" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="generate a secret with TPM, store it in TPM and combine it with key" vertex="1">
+          <mxGeometry height="120" width="80" x="-660" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-71" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;endArrow=none;endFill=0;" target="uplOdbWyYuc_OzDhIm8s-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-44" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;verticalAlign=middle;rounded=0;fontSize=10;" value="Checking against old hash and showing error is just for UX, decryption would fail with a bad key&amp;nbsp;anyways." vertex="1">
+          <mxGeometry height="50" width="137.5" x="-300" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-56" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-35" value="yes">
+          <mxGeometry relative="1" x="-0.6" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-81" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="no">
+          <mxGeometry relative="1" x="-0.9565" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-720" y="780" />
+              <mxPoint x="-560" y="780" />
+            </Array>
+            <mxPoint x="-560" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-45" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="is TPM&lt;div&gt;enabled?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="-780" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-66" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-65" value="yes">
+          <mxGeometry relative="1" x="-0.9091" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-67" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-22" value="no">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-49" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="hash(userKey&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;)&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;==&lt;/span&gt;&lt;/div&gt;&lt;div&gt;oldHash?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="-460" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-62" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-59" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-61" value="yes">
+          <mxGeometry relative="1" x="-0.6" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-63" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-59" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-49" value="no">
+          <mxGeometry relative="1" x="-0.8333" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-59" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="is TPM&lt;div&gt;enabled?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="-460" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-80" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-61" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="uplOdbWyYuc_OzDhIm8s-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-61" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="retrieve the secret from TPM and combine it with key" vertex="1">
+          <mxGeometry height="80" width="80" x="-340" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-65" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Key to use&lt;div&gt;in current session&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="120" x="-620" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-76" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-75" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-18" value="no">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-77" edge="1" parent="1" source="uplOdbWyYuc_OzDhIm8s-75" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uplOdbWyYuc_OzDhIm8s-22" value="yes">
+          <mxGeometry relative="1" x="-0.8333" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-75" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Is there a hash&lt;div&gt;of an old key?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="-620" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-89" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&quot;register&quot; scenario" vertex="1">
+          <mxGeometry height="30" width="60" x="-650" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="uplOdbWyYuc_OzDhIm8s-91" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&quot;login&quot; scenario" vertex="1">
+          <mxGeometry height="30" width="60" x="-320" y="270" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
